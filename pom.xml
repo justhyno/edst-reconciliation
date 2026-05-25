@@ -17,39 +17,19 @@
     <maven.compiler.source>1.8</maven.compiler.source>
     <maven.compiler.target>1.8</maven.compiler.target>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-    <!-- A war-plugin não exige web.xml obrigatório com Servlet 3.x -->
     <failOnMissingWebXml>false</failOnMissingWebXml>
-    <!-- Versão do BOM do JBoss EAP 7.2 -->
-    <version.jboss.bom>7.2.9.GA</version.jboss.bom>
   </properties>
-
-  <dependencyManagement>
-    <dependencies>
-      <!--
-        BOM oficial do JBoss EAP 7.2.
-        Garante versões alinhadas de todas as APIs Java EE.
-        Disponível no repositório Maven do JBoss / Red Hat.
-      -->
-      <dependency>
-        <groupId>org.jboss.bom</groupId>
-        <artifactId>jboss-eap-jakartaee8</artifactId>
-        <version>${version.jboss.bom}</version>
-        <type>pom</type>
-        <scope>import</scope>
-      </dependency>
-    </dependencies>
-  </dependencyManagement>
 
   <dependencies>
     <!--
-      API Java EE 7 em scope "provided":
-      o JBoss EAP 7.2 já inclui estas classes em runtime;
-      não devem ser empacotadas na WAR.
+      Servlet API 3.1 — fornecida pelo JBoss EAP 7.2 em runtime.
+      Scope "provided": não é empacotada na WAR.
+      Disponível no Maven Central, sem repositórios adicionais.
     -->
     <dependency>
-      <groupId>javax</groupId>
-      <artifactId>javaee-api</artifactId>
-      <version>7.0</version>
+      <groupId>javax.servlet</groupId>
+      <artifactId>javax.servlet-api</artifactId>
+      <version>3.1.0</version>
       <scope>provided</scope>
     </dependency>
   </dependencies>
@@ -78,18 +58,14 @@
         <configuration>
           <warName>edst-reconciliation</warName>
           <failOnMissingWebXml>false</failOnMissingWebXml>
-          <webResources>
-            <resource>
-              <directory>src/main/webapp</directory>
-            </resource>
-          </webResources>
         </configuration>
       </plugin>
 
       <!--
-        Plugin de deployment para JBoss/WildFly (opcional).
-        Permite: mvn wildfly:deploy
-        Configurar jboss-as.home ou wildfly.hostname/port conforme ambiente.
+        Plugin de deployment para JBoss EAP 7.2 / WildFly.
+        Uso: mvn wildfly:deploy
+        Requer JBoss a correr com management em localhost:9990.
+        Alternativa: copiar o WAR para standalone/deployments/
       -->
       <plugin>
         <groupId>org.wildfly.plugins</groupId>
@@ -103,29 +79,5 @@
 
     </plugins>
   </build>
-
-  <!--
-    Repositórios Red Hat para o BOM do JBoss EAP.
-    Necessário se o artefacto não estiver no Maven Central.
-  -->
-  <repositories>
-    <repository>
-      <id>redhat-ga</id>
-      <name>Red Hat GA Repository</name>
-      <url>https://maven.repository.redhat.com/ga/</url>
-      <releases><enabled>true</enabled></releases>
-      <snapshots><enabled>false</enabled></snapshots>
-    </repository>
-  </repositories>
-
-  <pluginRepositories>
-    <pluginRepository>
-      <id>redhat-ga-plugins</id>
-      <name>Red Hat GA Plugin Repository</name>
-      <url>https://maven.repository.redhat.com/ga/</url>
-      <releases><enabled>true</enabled></releases>
-      <snapshots><enabled>false</enabled></snapshots>
-    </pluginRepository>
-  </pluginRepositories>
 
 </project>
