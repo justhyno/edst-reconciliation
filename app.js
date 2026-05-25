@@ -153,13 +153,13 @@ function parseFicheiroA(texto) {
     if (linha[0] !== '1' || linha[6] !== '6') continue;
 
     // Verificar comprimento mínimo para extrair RRN
-    if (linha.length < 307) {
+    if (linha.length < 352) {
       descartadasCurtas++;
       continue;
     }
 
     passaramFiltro++;
-    const rrn = linha.substring(295, 307).trim();   // posições 296–307 (1-indexed)
+    const rrn = linha.substring(339, 352).trim();   // posições 340–352 (1-indexed)
 
     registos.push({
       numLinha:      i + 1,   // número de linha no ficheiro original
