@@ -207,7 +207,8 @@ function reconciliar(regsA, regsB) {
             DHMSG:     rB.DHMSG,
             campo_6:   rB.campo_6,
             campo_9:   rB.campo_9,
-            numLinhaA: rA.numLinha
+            numLinhaA: rA.numLinha,
+            OFS:       `AC.LOCKED.EVENTS,VISA/R/PROCESS/1/0/,NBOL.USER/123456/${rB.campo_9}/////,${rB.campo_6}`
           });
         }
       }
@@ -263,7 +264,7 @@ function exportarCSV(tipo) {
       nomeFicheiro = 'ficheiroA_filtrado.csv';
       break;
     case 'matches':
-      colunas      = ['RRN','CARD','DHMSG','campo_6','campo_9','numLinhaA'];
+      colunas      = ['RRN','CARD','DHMSG','campo_6','campo_9','numLinhaA','OFS'];
       dados        = resultadoRec.matches;
       nomeFicheiro = 'reconciliacao_matches.csv';
       break;
@@ -368,7 +369,7 @@ function renderTabelaA(registos, descartadas) {
 
 function renderTabelaMatches(matches) {
   const frag = document.createDocumentFragment();
-  const cols  = ['RRN','CARD','DHMSG','campo_6','numLinhaA'];
+  const cols  = ['RRN','CARD','DHMSG','campo_6','numLinhaA','OFS'];
 
   for (const r of matches) {
     const tr = document.createElement('tr');
