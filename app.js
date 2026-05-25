@@ -578,6 +578,45 @@ async function processar() {
 
 
 /* ============================================================
+   Copiar comando para a área de transferência
+============================================================ */
+
+/**
+ * Copia o conteúdo do atributo data-cmd do botão para o clipboard.
+ * Chamado inline no HTML (onclick).
+ * @param {HTMLButtonElement} btn
+ */
+function copiarComando(btn) {
+  const cmd = btn.dataset.cmd;
+  navigator.clipboard.writeText(cmd).then(() => {
+    const orig = btn.textContent;
+    btn.textContent = '✓';
+    btn.classList.add('copiado');
+    setTimeout(() => {
+      btn.textContent = orig;
+      btn.classList.remove('copiado');
+    }, 1800);
+  }).catch(() => {
+    // Fallback para browsers sem clipboard API (ex: file://)
+    const ta = document.createElement('textarea');
+    ta.value = cmd;
+    ta.style.position = 'fixed';
+    ta.style.opacity  = '0';
+    document.body.appendChild(ta);
+    ta.select();
+    document.execCommand('copy');
+    document.body.removeChild(ta);
+    btn.textContent = '✓';
+    btn.classList.add('copiado');
+    setTimeout(() => {
+      btn.textContent = '⎘';
+      btn.classList.remove('copiado');
+    }, 1800);
+  });
+}
+
+
+/* ============================================================
    Inicialização
 ============================================================ */
 

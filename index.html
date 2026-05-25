@@ -25,6 +25,16 @@
         <label for="ficheiroB">Ficheiro B — ATM MESSAGE LOG</label>
         <input type="file" id="ficheiroB" accept=".txt,.dat,.log,*">
         <span class="file-info" id="infoB">Nenhum ficheiro selecionado</span>
+        <div class="how-to">
+          <span class="how-to-title">&#8505; Como gerar este ficheiro</span>
+          <ol>
+            <li>Aceder ao <strong>DBTools Web</strong></li>
+            <li>Executar o comando:<br>
+              <code>LIST-ITEM F.ENET.MESSAGE.LOG.SB WITH @ID LIKE ...202605...</code>
+              <button class="btn-copy" onclick="copiarComando(this)" data-cmd="LIST-ITEM F.ENET.MESSAGE.LOG.SB WITH @ID LIKE ...202605..." title="Copiar comando">&#10697;</button>
+            </li>
+          </ol>
+        </div>
       </div>
     </section>
 
