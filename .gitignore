@@ -1,0 +1,16 @@
+# Directório de build Maven (excepto o WAR final)
+target/*/
+target/maven-archiver/
+target/maven-status/
+
+# IDEs
+.idea/
+*.iml
+.eclipse/
+.settings/
+.classpath
+.project
+
+# OS
+.DS_Store
+Thumbs.db
