@@ -159,7 +159,7 @@ function parseFicheiroA(texto) {
     }
 
     passaramFiltro++;
-    const rrn = linha.substring(339, 352).trim();   // posições 340–352 (1-indexed)
+    const rrn = linha.substring(339, 351).trim();   // posições 340–352 (1-indexed)
 
     registos.push({
       numLinha:      i + 1,   // número de linha no ficheiro original
