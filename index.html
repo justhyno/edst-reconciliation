@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Reconciliação EDST × ATM Message Log</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <header>
+    <h1>Reconciliação EDST × ATM Message Log</h1>
+  </header>
+
+  <main>
+
+    <!-- ── Carregamento de ficheiros ── -->
+    <section class="inputs-section">
+      <div class="input-card">
+        <label for="ficheiroA">Ficheiro A — EDST</label>
+        <input type="file" id="ficheiroA" accept=".txt,.dat,.log,*">
+        <span class="file-info" id="infoA">Nenhum ficheiro selecionado</span>
+      </div>
+      <div class="input-card">
+        <label for="ficheiroB">Ficheiro B — ATM MESSAGE LOG</label>
+        <input type="file" id="ficheiroB" accept=".txt,.dat,.log,*">
+        <span class="file-info" id="infoB">Nenhum ficheiro selecionado</span>
+      </div>
+    </section>
+
+    <!-- ── Opções e botão ── -->
+    <div class="options-bar">
+      <label class="checkbox-label">
+        <input type="checkbox" id="chkEncoding">
+        Ficheiro com acentos partidos (tentar Windows-1252)
+      </label>
+      <button id="btnProcessar" class="btn-primary">Processar e Reconciliar</button>
+    </div>
+
+    <!-- ── Painel de avisos ── -->
+    <section class="avisos-panel" id="avisosPanel" hidden>
+      <h3>⚠ Avisos</h3>
+      <ul id="avisosList"></ul>
+    </section>
+
+    <!-- ── Painel de diagnóstico ── -->
+    <section class="debug-panel" id="debugPanel" hidden>
+      <h3>Diagnóstico</h3>
+      <div class="debug-grid" id="debugGrid"></div>
+    </section>
+
+    <!-- ── Resultados com tabs ── -->
+    <section class="resultados" id="resultados" hidden>
+
+      <div class="tabs" role="tablist">
+        <button class="tab-btn active" data-tab="tabB" role="tab">Ficheiro B Parseado</button>
+        <button class="tab-btn" data-tab="tabA" role="tab">Ficheiro A Filtrado</button>
+        <button class="tab-btn" data-tab="tabRec" role="tab">Reconciliação</button>
+      </div>
+
+      <!-- Tab B -->
+      <div class="tab-content active" id="tabB">
+        <div class="tab-header">
+          <span class="count-badge" id="countB">—</span>
+          <button class="btn-export" onclick="exportarCSV('B')">Exportar CSV</button>
+        </div>
+        <div class="table-wrapper">
+          <table id="tabelaB">
+            <thead>
+              <tr>
+                <th>RRN</th>
+                <th>CARD</th>
+                <th>DHMSG</th>
+                <th>ID Completo</th>
+                <th>Campo 2</th>
+                <th>Campo 3</th>
+                <th>Campo 4</th>
+                <th>Campo 6</th>
+                <th>Campo 8</th>
+                <th>Campo 9</th>
+              </tr>
+            </thead>
+            <tbody id="corpoB"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Tab A -->
+      <div class="tab-content" id="tabA">
+        <div class="tab-header">
+          <span class="count-badge" id="countA">—</span>
+          <button class="btn-export" onclick="exportarCSV('A')">Exportar CSV</button>
+        </div>
+        <div class="table-wrapper">
+          <table id="tabelaA">
+            <thead>
+              <tr>
+                <th>#Linha</th>
+                <th>RRN</th>
+                <th>Linha (truncada a 80 chars)</th>
+              </tr>
+            </thead>
+            <tbody id="corpoA"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Tab Reconciliação -->
+      <div class="tab-content" id="tabRec">
+
+        <div class="rec-counts" id="recCounts"></div>
+
+        <h4 class="rec-section-title match">&#10003; Matches — presentes em A e em B</h4>
+        <div class="tab-header">
+          <span class="count-badge match" id="countMatches">—</span>
+          <button class="btn-export" onclick="exportarCSV('matches')">Exportar CSV</button>
+        </div>
+        <div class="table-wrapper">
+          <table id="tabelaMatches">
+            <thead>
+              <tr>
+                <th>RRN</th>
+                <th>CARD</th>
+                <th>DHMSG</th>
+                <th>Campo 6</th>
+                <th>#Linha em A</th>
+              </tr>
+            </thead>
+            <tbody id="corpoMatches"></tbody>
+          </table>
+        </div>
+
+        <h4 class="rec-section-title soA">&#8594; Só em A — sem correspondência em B</h4>
+        <div class="tab-header">
+          <span class="count-badge soA" id="countSoA">—</span>
+          <button class="btn-export" onclick="exportarCSV('soA')">Exportar CSV</button>
+        </div>
+        <div class="table-wrapper">
+          <table id="tabelaSoA">
+            <thead>
+              <tr>
+                <th>#Linha</th>
+                <th>RRN</th>
+                <th>Linha (truncada a 80 chars)</th>
+              </tr>
+            </thead>
+            <tbody id="corpoSoA"></tbody>
+          </table>
+        </div>
+
+        <h4 class="rec-section-title soB">&#8594; Só em B — sem correspondência em A</h4>
+        <div class="tab-header">
+          <span class="count-badge soB" id="countSoB">—</span>
+          <button class="btn-export" onclick="exportarCSV('soB')">Exportar CSV</button>
+        </div>
+        <div class="table-wrapper">
+          <table id="tabelaSoB">
+            <thead>
+              <tr>
+                <th>RRN</th>
+                <th>CARD</th>
+                <th>DHMSG</th>
+                <th>Campo 6</th>
+                <th>Campo 9</th>
+              </tr>
+            </thead>
+            <tbody id="corpoSoB"></tbody>
+          </table>
+        </div>
+
+      </div><!-- /tabRec -->
+    </section><!-- /resultados -->
+
+  </main>
+
+  <script src="app.js"></script>
+</body>
+</html>
