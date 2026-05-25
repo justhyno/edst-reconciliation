@@ -1,0 +1,131 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0
+                             http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+
+  <groupId>mz.ao.bank</groupId>
+  <artifactId>edst-reconciliation</artifactId>
+  <version>1.0.0</version>
+  <packaging>war</packaging>
+
+  <name>EDST Reconciliation</name>
+  <description>Reconciliação EDST vs ATM Message Log — JBoss EAP 7.2</description>
+
+  <properties>
+    <maven.compiler.source>1.8</maven.compiler.source>
+    <maven.compiler.target>1.8</maven.compiler.target>
+    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    <!-- A war-plugin não exige web.xml obrigatório com Servlet 3.x -->
+    <failOnMissingWebXml>false</failOnMissingWebXml>
+    <!-- Versão do BOM do JBoss EAP 7.2 -->
+    <version.jboss.bom>7.2.9.GA</version.jboss.bom>
+  </properties>
+
+  <dependencyManagement>
+    <dependencies>
+      <!--
+        BOM oficial do JBoss EAP 7.2.
+        Garante versões alinhadas de todas as APIs Java EE.
+        Disponível no repositório Maven do JBoss / Red Hat.
+      -->
+      <dependency>
+        <groupId>org.jboss.bom</groupId>
+        <artifactId>jboss-eap-jakartaee8</artifactId>
+        <version>${version.jboss.bom}</version>
+        <type>pom</type>
+        <scope>import</scope>
+      </dependency>
+    </dependencies>
+  </dependencyManagement>
+
+  <dependencies>
+    <!--
+      API Java EE 7 em scope "provided":
+      o JBoss EAP 7.2 já inclui estas classes em runtime;
+      não devem ser empacotadas na WAR.
+    -->
+    <dependency>
+      <groupId>javax</groupId>
+      <artifactId>javaee-api</artifactId>
+      <version>7.0</version>
+      <scope>provided</scope>
+    </dependency>
+  </dependencies>
+
+  <build>
+    <finalName>edst-reconciliation</finalName>
+    <plugins>
+
+      <!-- Compilador Java 8 -->
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-compiler-plugin</artifactId>
+        <version>3.11.0</version>
+        <configuration>
+          <source>1.8</source>
+          <target>1.8</target>
+          <encoding>UTF-8</encoding>
+        </configuration>
+      </plugin>
+
+      <!-- Empacotamento WAR -->
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-war-plugin</artifactId>
+        <version>3.3.2</version>
+        <configuration>
+          <warName>edst-reconciliation</warName>
+          <failOnMissingWebXml>false</failOnMissingWebXml>
+          <webResources>
+            <resource>
+              <directory>src/main/webapp</directory>
+            </resource>
+          </webResources>
+        </configuration>
+      </plugin>
+
+      <!--
+        Plugin de deployment para JBoss/WildFly (opcional).
+        Permite: mvn wildfly:deploy
+        Configurar jboss-as.home ou wildfly.hostname/port conforme ambiente.
+      -->
+      <plugin>
+        <groupId>org.wildfly.plugins</groupId>
+        <artifactId>wildfly-maven-plugin</artifactId>
+        <version>2.1.0.Final</version>
+        <configuration>
+          <hostname>localhost</hostname>
+          <port>9990</port>
+        </configuration>
+      </plugin>
+
+    </plugins>
+  </build>
+
+  <!--
+    Repositórios Red Hat para o BOM do JBoss EAP.
+    Necessário se o artefacto não estiver no Maven Central.
+  -->
+  <repositories>
+    <repository>
+      <id>redhat-ga</id>
+      <name>Red Hat GA Repository</name>
+      <url>https://maven.repository.redhat.com/ga/</url>
+      <releases><enabled>true</enabled></releases>
+      <snapshots><enabled>false</enabled></snapshots>
+    </repository>
+  </repositories>
+
+  <pluginRepositories>
+    <pluginRepository>
+      <id>redhat-ga-plugins</id>
+      <name>Red Hat GA Plugin Repository</name>
+      <url>https://maven.repository.redhat.com/ga/</url>
+      <releases><enabled>true</enabled></releases>
+      <snapshots><enabled>false</enabled></snapshots>
+    </pluginRepository>
+  </pluginRepositories>
+
+</project>
