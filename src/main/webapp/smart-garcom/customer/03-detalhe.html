@@ -1,0 +1,814 @@
+<!doctype html>
+<html lang="pt">
+<head>
+<meta charset="utf-8">
+<title>Customer app — Detalhe de item — Frango à zambeziana</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/dist/tabler-icons.min.css">
+<style>
+  :root {
+    --bg: #FAFAF7;
+    --surface: #FFFFFF;
+    --border: rgba(0,0,0,0.08);
+    --border-strong: rgba(0,0,0,0.16);
+    --text: #1A1A1A;
+    --text-muted: #6B6B6B;
+    --text-subtle: #9A9A9A;
+
+    --brand: #1D9E75;
+    --brand-hover: #0F6E56;
+    --brand-light: #E1F5EE;
+    --brand-text: #085041;
+
+    --warning: #BA7517;
+    --warning-light: #FAEEDA;
+    --danger: #E24B4A;
+    --danger-light: #FCEBEB;
+    --info: #378ADD;
+    --info-light: #E6F1FB;
+
+    --page-bg: #EFEEEA;
+    --page-text: #2A2A2A;
+    --page-text-muted: #6B6B6B;
+    --pin: #1A1A1A;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #1A1A1A;
+      --surface: #2A2A2A;
+      --border: rgba(255,255,255,0.08);
+      --border-strong: rgba(255,255,255,0.16);
+      --text: #F0F0F0;
+      --text-muted: #B0B0B0;
+      --text-subtle: #808080;
+      --brand-light: #085041;
+      --brand-text: #9FE1CB;
+    }
+  }
+
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0;
+    font-family: 'Inter', system-ui, sans-serif;
+    background: var(--page-bg);
+    color: var(--page-text);
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+
+  .page {
+    min-height: 100vh;
+    display: grid;
+    grid-template-columns: 1fr 420px;
+    gap: 40px;
+    padding: 32px 40px;
+    align-items: start;
+  }
+  .stage {
+    display: flex; flex-direction: column; align-items: center; gap: 24px;
+  }
+  .meta { width: 100%; max-width: 460px; text-align: center; }
+  .meta .crumb {
+    font-size: 13px; color: var(--page-text-muted); letter-spacing: 0.02em;
+  }
+  .meta h1 {
+    font-size: 20px; font-weight: 500; margin: 4px 0 0; color: var(--page-text);
+  }
+  .meta .state {
+    display: inline-block; margin-top: 8px; font-size: 12px;
+    padding: 3px 10px; border-radius: 999px;
+    background: #fff; border: 1px solid rgba(0,0,0,0.08);
+    color: var(--page-text-muted);
+  }
+
+  .frame-wrap { position: relative; width: 396px; height: 832px; }
+  .frame {
+    position: absolute; inset: 0; background: #0B0B0B;
+    border-radius: 56px; padding: 10px;
+    box-shadow: 0 0 0 1.5px #2a2a2a inset,
+                0 30px 60px -20px rgba(0,0,0,0.3),
+                0 10px 20px -10px rgba(0,0,0,0.15);
+  }
+  .screen {
+    position: relative; width: 100%; height: 100%;
+    border-radius: 46px; overflow: hidden;
+    background: var(--bg); color: var(--text);
+    display: flex; flex-direction: column;
+  }
+  .dyn-island {
+    position: absolute; top: 12px; left: 50%; transform: translateX(-50%);
+    width: 120px; height: 34px; background: #000;
+    border-radius: 20px; z-index: 10;
+  }
+  .home-indicator {
+    position: absolute; bottom: 8px; left: 50%; transform: translateX(-50%);
+    width: 134px; height: 5px; background: var(--text);
+    opacity: 0.85; border-radius: 999px; z-index: 30;
+  }
+
+  /* ===== Hero photo with overlaid controls ===== */
+  .hero {
+    position: relative;
+    height: 340px;
+    flex-shrink: 0;
+    background:
+      radial-gradient(ellipse at 30% 30%, #F0B070 0%, transparent 50%),
+      radial-gradient(ellipse at 70% 80%, #7A1F0F 0%, transparent 55%),
+      radial-gradient(ellipse at 80% 30%, #E25A2B 0%, transparent 50%),
+      linear-gradient(135deg, #C24A1F 0%, #6B2410 100%);
+  }
+  /* subtle texture suggesting char */
+  .hero::after {
+    content: "";
+    position: absolute; inset: 0;
+    background:
+      radial-gradient(circle at 20% 60%, rgba(0,0,0,0.18), transparent 25%),
+      radial-gradient(circle at 65% 40%, rgba(0,0,0,0.15), transparent 20%),
+      radial-gradient(circle at 80% 80%, rgba(0,0,0,0.12), transparent 22%);
+  }
+  .hero-status {
+    position: relative; z-index: 2;
+    height: 54px;
+    padding: 18px 28px 0;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 15px;
+    font-weight: 500;
+    color: #fff;
+  }
+  .hero-status .status-right { display: flex; gap: 6px; align-items: center; font-size: 14px; }
+  .hero-status .battery {
+    display: inline-flex; align-items: center;
+  }
+  .hero-status .battery .cell {
+    width: 22px; height: 11px;
+    border: 1px solid #fff;
+    border-radius: 3px;
+    padding: 1.5px;
+    position: relative;
+  }
+  .hero-status .battery .cell::after {
+    content: ""; position: absolute;
+    right: -3px; top: 3px;
+    width: 2px; height: 5px;
+    background: #fff; border-radius: 0 1px 1px 0;
+  }
+  .hero-status .battery .fill {
+    background: #fff; width: 80%; height: 100%; border-radius: 1px;
+  }
+
+  .hero-controls {
+    position: absolute;
+    top: 68px;
+    left: 0; right: 0;
+    z-index: 2;
+    padding: 0 16px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .icon-btn-glass {
+    width: 40px; height: 40px;
+    border-radius: 999px;
+    background: rgba(255,255,255,0.92);
+    color: #1A1A1A;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border: none;
+    cursor: pointer;
+    backdrop-filter: blur(8px);
+  }
+  .icon-btn-glass .ti { font-size: 20px; }
+
+  .hero-controls .right { display: flex; gap: 8px; }
+
+  .hero-tag {
+    position: absolute;
+    bottom: 70px;
+    left: 20px;
+    background: rgba(0,0,0,0.45);
+    color: #fff;
+    font-size: 11px;
+    padding: 4px 10px;
+    border-radius: 999px;
+    z-index: 2;
+    letter-spacing: 0.02em;
+  }
+  .photo-placeholder-note {
+    position: absolute;
+    bottom: 70px;
+    right: 20px;
+    background: rgba(0,0,0,0.35);
+    color: rgba(255,255,255,0.85);
+    font-size: 10px;
+    padding: 3px 8px;
+    border-radius: 999px;
+    z-index: 2;
+  }
+
+  /* ===== Content card overlapping hero ===== */
+  .sheet {
+    position: relative;
+    z-index: 3;
+    margin-top: -28px;
+    background: var(--bg);
+    border-radius: 24px 24px 0 0;
+    flex: 1;
+    overflow-y: auto;
+    padding: 8px 20px 120px; /* room for bottom bar */
+    min-height: 0;
+  }
+  .sheet::-webkit-scrollbar { width: 0; }
+
+  /* drag handle */
+  .grabber {
+    width: 36px; height: 4px;
+    background: var(--border-strong);
+    border-radius: 999px;
+    margin: 6px auto 14px;
+  }
+
+  .title-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 12px;
+  }
+  h1.item-title {
+    font-size: 24px;
+    font-weight: 500;
+    color: var(--text);
+    margin: 0;
+    letter-spacing: -0.015em;
+    line-height: 1.25;
+  }
+  .price-pill {
+    font-size: 15px;
+    font-weight: 500;
+    color: var(--text);
+    padding: 6px 12px;
+    border-radius: 999px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    flex-shrink: 0;
+    margin-top: 2px;
+  }
+
+  .tags-row {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin-top: 14px;
+  }
+  .tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 12px;
+    padding: 4px 10px;
+    border-radius: 999px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    color: var(--text-muted);
+  }
+  .tag.spicy { background: var(--danger-light); border-color: transparent; color: var(--danger); }
+  .tag.time { background: var(--warning-light); border-color: transparent; color: var(--warning); }
+  .tag .ti { font-size: 13px; }
+
+  .desc {
+    font-size: 15px;
+    color: var(--text-muted);
+    line-height: 1.6;
+    margin: 16px 0 0;
+  }
+
+  .in-cart-banner {
+    margin: 18px 0 4px;
+    background: var(--brand-light);
+    color: var(--brand-text);
+    border-radius: 12px;
+    padding: 10px 14px;
+    font-size: 13px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .in-cart-banner .ti { font-size: 16px; }
+
+  /* Modifier sections */
+  .group {
+    margin-top: 28px;
+  }
+  .group-head {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    margin-bottom: 10px;
+  }
+  .group-title {
+    font-size: 16px;
+    font-weight: 500;
+    color: var(--text);
+    margin: 0;
+    letter-spacing: -0.005em;
+  }
+  .group-meta {
+    font-size: 12px;
+    color: var(--text-subtle);
+  }
+  .group-meta.required {
+    color: var(--warning);
+  }
+
+  .options {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    overflow: hidden;
+  }
+  .option {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 14px 16px;
+    cursor: pointer;
+    border-bottom: 1px solid var(--border);
+    user-select: none;
+  }
+  .option:last-child { border-bottom: 0; }
+  .option:hover { background: var(--bg); }
+
+  .control {
+    width: 22px; height: 22px;
+    border: 1.5px solid var(--border-strong);
+    border-radius: 999px;
+    background: var(--surface);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+  .control.checkbox {
+    border-radius: 6px;
+  }
+  .control .dot {
+    width: 10px; height: 10px;
+    border-radius: 999px;
+    background: var(--brand);
+    opacity: 0;
+  }
+  .control .ti-check {
+    color: #fff;
+    font-size: 14px;
+    opacity: 0;
+  }
+  .option.selected .control {
+    background: var(--brand);
+    border-color: var(--brand);
+  }
+  .option.selected .control .dot { opacity: 1; background: #fff; }
+  .option.selected .control .ti-check { opacity: 1; }
+
+  .option-label {
+    flex: 1;
+    font-size: 15px;
+    color: var(--text);
+  }
+  .option-extra {
+    font-size: 13px;
+    color: var(--text-muted);
+  }
+  .option-extra.included {
+    color: var(--brand);
+  }
+
+  /* Observations */
+  .obs {
+    margin-top: 28px;
+  }
+  .obs-label {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    margin-bottom: 10px;
+  }
+  .obs-label .group-title { font-size: 16px; font-weight: 500; }
+  .obs-textarea {
+    width: 100%;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 14px 16px;
+    font-family: inherit;
+    font-size: 15px;
+    color: var(--text);
+    line-height: 1.5;
+    min-height: 84px;
+    resize: none;
+    outline: none;
+  }
+  .obs-textarea::placeholder { color: var(--text-subtle); }
+
+  /* Bottom action bar */
+  .action-bar {
+    position: absolute;
+    left: 0; right: 0;
+    bottom: 0;
+    z-index: 20;
+    background: var(--surface);
+    border-top: 1px solid var(--border);
+    padding: 14px 20px 36px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .qty-stepper {
+    display: inline-flex;
+    align-items: center;
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    padding: 4px;
+    background: var(--bg);
+  }
+  .qty-stepper button {
+    width: 36px; height: 36px;
+    border: none;
+    background: transparent;
+    color: var(--text);
+    cursor: pointer;
+    border-radius: 999px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .qty-stepper button:hover { background: var(--surface); }
+  .qty-stepper .qty {
+    min-width: 28px;
+    text-align: center;
+    font-size: 16px;
+    font-weight: 500;
+    color: var(--text);
+  }
+
+  .add-cta {
+    flex: 1;
+    height: 52px;
+    border-radius: 14px;
+    background: var(--brand);
+    color: #fff;
+    border: none;
+    font-family: inherit;
+    font-size: 16px;
+    font-weight: 500;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 18px;
+  }
+  .add-cta:hover { background: var(--brand-hover); }
+  .add-cta .label { display: inline-flex; align-items: center; gap: 8px; }
+  .add-cta .total { font-size: 16px; font-weight: 500; letter-spacing: -0.01em; }
+
+  /* Pins */
+  .pins { position: absolute; inset: 0; pointer-events: none; }
+  .pin {
+    position: absolute;
+    width: 24px; height: 24px;
+    border-radius: 999px;
+    background: var(--pin);
+    color: #fff;
+    font-size: 12px;
+    font-weight: 500;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .pin::before {
+    content: ""; position: absolute; inset: -2px;
+    border-radius: 999px; border: 2px solid #fff;
+  }
+
+  /* Notes */
+  .notes {
+    position: sticky; top: 32px;
+    background: #fff;
+    border: 1px solid rgba(0,0,0,0.06);
+    border-radius: 16px;
+    padding: 24px 26px 28px;
+  }
+  .notes h2 {
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--page-text-muted);
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    margin: 0 0 16px;
+  }
+  .notes-title {
+    font-size: 18px;
+    font-weight: 500;
+    margin: 0 0 4px;
+    letter-spacing: -0.01em;
+  }
+  .notes-sub {
+    font-size: 13px;
+    color: var(--page-text-muted);
+    margin: 0 0 20px;
+    line-height: 1.5;
+  }
+  .note-list {
+    margin: 0; padding: 0; list-style: none;
+    display: flex; flex-direction: column; gap: 16px;
+  }
+  .note-list li {
+    display: grid;
+    grid-template-columns: 26px 1fr;
+    gap: 12px;
+    align-items: start;
+  }
+  .note-num {
+    width: 24px; height: 24px;
+    border-radius: 999px;
+    background: var(--pin);
+    color: #fff;
+    font-size: 12px;
+    font-weight: 500;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    margin-top: 1px;
+  }
+  .note-body {
+    font-size: 14px;
+    line-height: 1.55;
+    color: var(--page-text);
+  }
+  .note-body strong { font-weight: 500; }
+  .note-body em { font-style: normal; color: var(--page-text-muted); }
+  .legend {
+    margin-top: 28px;
+    padding-top: 20px;
+    border-top: 1px solid rgba(0,0,0,0.06);
+    display: grid;
+    grid-template-columns: auto 1fr;
+    gap: 8px 14px;
+    font-size: 13px;
+    color: var(--page-text-muted);
+  }
+  .legend dt { color: var(--page-text); font-weight: 500; }
+  .return {
+    margin-top: 24px;
+    display: inline-flex; align-items: center; gap: 6px;
+    font-size: 13px;
+    color: var(--page-text-muted);
+    text-decoration: none;
+  }
+  .return:hover { color: var(--page-text); }
+</style>
+</head>
+<body>
+
+<div class="page">
+  <div class="stage">
+    <div class="meta">
+      <div class="crumb">Customer app · iPhone 14 · 375 × 812</div>
+      <h1>03 — Detalhe de item</h1>
+      <span class="state">Frango à zambeziana · com modificadores e observação</span>
+    </div>
+
+    <div class="frame-wrap" data-screen-label="Customer 03 — Detalhe">
+      <div class="frame">
+        <div class="screen">
+
+          <div class="dyn-island"></div>
+
+          <!-- HERO -->
+          <div class="hero">
+            <div class="hero-status">
+              <span>9:41</span>
+              <div class="status-right">
+                <i class="ti ti-signal-4g" aria-hidden="true"></i>
+                <i class="ti ti-wifi" aria-hidden="true"></i>
+                <span class="battery"><span class="cell"><span class="fill"></span></span></span>
+              </div>
+            </div>
+
+            <div class="hero-controls">
+              <button class="icon-btn-glass" aria-label="Voltar"><i class="ti ti-arrow-left" aria-hidden="true"></i></button>
+              <div class="right">
+                <button class="icon-btn-glass" aria-label="Partilhar"><i class="ti ti-share-3" aria-hidden="true"></i></button>
+                <button class="icon-btn-glass" aria-label="Guardar"><i class="ti ti-heart" aria-hidden="true"></i></button>
+              </div>
+            </div>
+
+            <span class="hero-tag">Pratos principais</span>
+            <span class="photo-placeholder-note">[foto: frango à zambeziana]</span>
+          </div>
+
+          <!-- SHEET -->
+          <div class="sheet">
+            <div class="grabber"></div>
+
+            <div class="title-row">
+              <h1 class="item-title">Frango à zambeziana</h1>
+              <span class="price-pill">380,00 MT</span>
+            </div>
+
+            <div class="tags-row">
+              <span class="tag spicy"><i class="ti ti-flame" aria-hidden="true"></i>Picante</span>
+              <span class="tag time"><i class="ti ti-clock-hour-3" aria-hidden="true"></i>~20 min</span>
+              <span class="tag"><i class="ti ti-user" aria-hidden="true"></i>1 pessoa</span>
+            </div>
+
+            <p class="desc">Frango grelhado lentamente em molho de coco e piri-piri caseiro. Acompanha matapa e arroz branco. Receita tradicional da Zambézia.</p>
+
+            <div class="in-cart-banner">
+              <i class="ti ti-shopping-cart" aria-hidden="true"></i>
+              Já tem 2 deste prato no carrinho.
+            </div>
+
+            <!-- Grupo: Picante -->
+            <div class="group">
+              <div class="group-head">
+                <h2 class="group-title">Nível de picante</h2>
+                <span class="group-meta required">Obrigatório</span>
+              </div>
+              <div class="options">
+                <label class="option">
+                  <span class="control"><span class="dot"></span></span>
+                  <span class="option-label">Suave</span>
+                </label>
+                <label class="option selected">
+                  <span class="control"><span class="dot"></span></span>
+                  <span class="option-label">Médio</span>
+                </label>
+                <label class="option">
+                  <span class="control"><span class="dot"></span></span>
+                  <span class="option-label">Forte</span>
+                </label>
+                <label class="option">
+                  <span class="control"><span class="dot"></span></span>
+                  <span class="option-label">Extra piri-piri</span>
+                  <span class="option-extra">+50,00 MT</span>
+                </label>
+              </div>
+            </div>
+
+            <!-- Grupo: Acompanhamento -->
+            <div class="group">
+              <div class="group-head">
+                <h2 class="group-title">Acompanhamento</h2>
+                <span class="group-meta required">Escolha 1</span>
+              </div>
+              <div class="options">
+                <label class="option selected">
+                  <span class="control"><span class="dot"></span></span>
+                  <span class="option-label">Matapa e arroz</span>
+                  <span class="option-extra included">Incluído</span>
+                </label>
+                <label class="option">
+                  <span class="control"><span class="dot"></span></span>
+                  <span class="option-label">Só arroz</span>
+                  <span class="option-extra included">Incluído</span>
+                </label>
+                <label class="option">
+                  <span class="control"><span class="dot"></span></span>
+                  <span class="option-label">Batata frita</span>
+                  <span class="option-extra">+30,00 MT</span>
+                </label>
+                <label class="option">
+                  <span class="control"><span class="dot"></span></span>
+                  <span class="option-label">Salada</span>
+                  <span class="option-extra">+40,00 MT</span>
+                </label>
+              </div>
+            </div>
+
+            <!-- Grupo: Extras (checkboxes) -->
+            <div class="group">
+              <div class="group-head">
+                <h2 class="group-title">Extras</h2>
+                <span class="group-meta">Opcional · vários</span>
+              </div>
+              <div class="options">
+                <label class="option">
+                  <span class="control checkbox"><i class="ti ti-check" aria-hidden="true"></i></span>
+                  <span class="option-label">Sem cebola</span>
+                </label>
+                <label class="option selected">
+                  <span class="control checkbox"><i class="ti ti-check" aria-hidden="true"></i></span>
+                  <span class="option-label">Molho extra de piri-piri</span>
+                  <span class="option-extra">+30,00 MT</span>
+                </label>
+                <label class="option">
+                  <span class="control checkbox"><i class="ti ti-check" aria-hidden="true"></i></span>
+                  <span class="option-label">Sem coentros</span>
+                </label>
+              </div>
+            </div>
+
+            <!-- Observações -->
+            <div class="obs">
+              <div class="obs-label">
+                <h2 class="group-title">Observações para a cozinha</h2>
+                <span class="group-meta">Opcional</span>
+              </div>
+              <textarea class="obs-textarea" placeholder="Ex: bem passado, sem sal...">Por favor bem passado, obrigado.</textarea>
+            </div>
+
+          </div>
+
+          <!-- BOTTOM ACTION BAR -->
+          <div class="action-bar">
+            <div class="qty-stepper">
+              <button aria-label="Remover"><i class="ti ti-minus" aria-hidden="true"></i></button>
+              <span class="qty">1</span>
+              <button aria-label="Adicionar"><i class="ti ti-plus" aria-hidden="true"></i></button>
+            </div>
+            <button class="add-cta">
+              <span class="label"><i class="ti ti-plus" aria-hidden="true"></i>Adicionar</span>
+              <span class="total">410,00 MT</span>
+            </button>
+          </div>
+
+          <div class="home-indicator"></div>
+        </div>
+      </div>
+
+      <!-- Pins -->
+      <div class="pins">
+        <div class="pin" style="top: 110px; left: 24px;">1</div>
+        <div class="pin" style="top: 110px; right: 78px;">2</div>
+        <div class="pin" style="top: 310px; left: 50%; transform: translateX(-50%);">3</div>
+        <div class="pin" style="top: 410px; right: 24px;">4</div>
+        <div class="pin" style="top: 500px; left: 24px;">5</div>
+        <div class="pin" style="top: 560px; right: 80px;">6</div>
+        <div class="pin" style="bottom: 174px; left: 24px;">7</div>
+        <div class="pin" style="bottom: 60px; left: 50%; transform: translateX(-50%);">8</div>
+      </div>
+    </div>
+  </div>
+
+  <aside class="notes">
+    <h2>Anotações de design</h2>
+    <p class="notes-title">Modificadores claros, decisão guiada</p>
+    <p class="notes-sub">Hero photo full-bleed para gerar apetite; folha branca por cima onde tudo é tocável. Required vs Opcional sempre etiquetado. Preço actualiza em tempo real à direita do CTA.</p>
+
+    <ol class="note-list">
+      <li>
+        <span class="note-num">1</span>
+        <span class="note-body"><strong>Hero photo full-bleed (340px)</strong> sob a status bar, com ícones brancos. Em produção, fotografia profissional do prato; aqui placeholder em gradiente quente que sugere frango grelhado com piri-piri. <em>Apetite > minimalismo aqui.</em></span>
+      </li>
+      <li>
+        <span class="note-num">2</span>
+        <span class="note-body"><strong>Controlos "vidro" sobre a foto</strong> — back, partilhar, guardar. Pílulas brancas com 92% opacidade + blur. Acessíveis sem comprometer a imagem.</span>
+      </li>
+      <li>
+        <span class="note-num">3</span>
+        <span class="note-body"><strong>Folha que sobrepõe o hero</strong> com cantos 24px e grabber visual — convenção iOS clara de "isto é tocável e tem scroll". Preço destacado num pill ao lado do nome.</span>
+      </li>
+      <li>
+        <span class="note-num">4</span>
+        <span class="note-body"><strong>Banner "Já tem 2 no carrinho"</strong> — evita confusão de "estou a adicionar mais ou a editar?" Cada adição cria nova linha (modificadores podem diferir), comportamento típico de POS.</span>
+      </li>
+      <li>
+        <span class="note-num">5</span>
+        <span class="note-body"><strong>"Obrigatório" / "Opcional" sempre visível</strong> à direita do título do grupo. Reduz hesitação — o cliente sabe se pode saltar.</span>
+      </li>
+      <li>
+        <span class="note-num">6</span>
+        <span class="note-body"><strong>Preço dos modificadores explícito</strong> ("+50,00 MT", "+30,00 MT") ou "Incluído" em verde brand. Surpresas no total no fim do flow é uma das principais causas de drop-off.</span>
+      </li>
+      <li>
+        <span class="note-num">7</span>
+        <span class="note-body"><strong>Observações de campo livre</strong> — escape hatch para o que o sistema não modela ("bem passado", alergias, "sem sal"). Vai como nota visível ao chef no KDS.</span>
+      </li>
+      <li>
+        <span class="note-num">8</span>
+        <span class="note-body"><strong>Bottom bar: qty + CTA com total dinâmico</strong> — 380 base + 30 (molho extra) = 410,00 MT. Stepper à esquerda, CTA cheia à direita com label + total alinhado à direita.</span>
+      </li>
+    </ol>
+
+    <dl class="legend">
+      <dt>Estado mostrado</dt>
+      <dd>Picante: Médio · Acompanhamento: Matapa e arroz · Extras: Molho extra (+30) · Obs: "bem passado" · Qty: 1 · <strong>Total: 410,00 MT</strong></dd>
+      <dt>Comportamento de carrinho</dt>
+      <dd>Tap em "Adicionar" cria nova linha — não edita as 2 anteriores (podem ter modificadores diferentes). Para editar, abrir a partir do carrinho (ecrã 04).</dd>
+      <dt>Estados alternativos</dt>
+      <dd>Item esgotado (CTA bloqueado) · Sem modificadores (saltar para o stepper) · Modificador obrigatório por escolher (CTA disabled com hint)</dd>
+    </dl>
+
+    <a class="return" href="../index.html">
+      <i class="ti ti-arrow-left" aria-hidden="true"></i>
+      Voltar ao índice
+    </a>
+  </aside>
+
+</div>
+
+</body>
+</html>

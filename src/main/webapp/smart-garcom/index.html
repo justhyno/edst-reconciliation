@@ -1,0 +1,402 @@
+<!doctype html>
+<html lang="pt">
+<head>
+<meta charset="utf-8">
+<title>Smart Garcom — Mockups</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/dist/tabler-icons.min.css">
+<style>
+  :root {
+    --bg: #FAFAF7;
+    --surface: #FFFFFF;
+    --border: rgba(0,0,0,0.08);
+    --border-strong: rgba(0,0,0,0.16);
+    --text: #1A1A1A;
+    --text-muted: #6B6B6B;
+    --text-subtle: #9A9A9A;
+    --brand: #1D9E75;
+    --brand-hover: #0F6E56;
+    --brand-light: #E1F5EE;
+    --brand-text: #085041;
+    --warning-light: #FAEEDA;
+    --warning: #BA7517;
+    --danger-light: #FCEBEB;
+    --danger: #E24B4A;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #1A1A1A;
+      --surface: #2A2A2A;
+      --border: rgba(255,255,255,0.08);
+      --border-strong: rgba(255,255,255,0.16);
+      --text: #F0F0F0;
+      --text-muted: #B0B0B0;
+      --text-subtle: #808080;
+      --brand-light: #085041;
+      --brand-text: #9FE1CB;
+    }
+  }
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0;
+    font-family: 'Inter', system-ui, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    -webkit-font-smoothing: antialiased;
+  }
+  .wrap {
+    max-width: 1280px;
+    margin: 0 auto;
+    padding: 56px 40px 80px;
+  }
+  header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 24px;
+    margin-bottom: 48px;
+  }
+  .brand {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 18px;
+    font-weight: 500;
+  }
+  .brand .dot {
+    width: 10px; height: 10px;
+    background: var(--brand);
+    border-radius: 999px;
+  }
+  .lede {
+    max-width: 640px;
+    margin-top: 8px;
+  }
+  .lede h1 {
+    font-size: 32px;
+    font-weight: 500;
+    letter-spacing: -0.015em;
+    margin: 0 0 12px;
+  }
+  .lede p {
+    font-size: 16px;
+    line-height: 1.6;
+    color: var(--text-muted);
+    margin: 0;
+  }
+  .meta-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    padding: 8px 14px;
+    font-size: 13px;
+    color: var(--text-muted);
+  }
+  .meta-pill .ti { font-size: 14px; }
+
+  section { margin-top: 56px; }
+  .section-head {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    margin-bottom: 20px;
+    padding-bottom: 14px;
+    border-bottom: 1px solid var(--border);
+  }
+  .section-head h2 {
+    font-size: 18px;
+    font-weight: 500;
+    margin: 0;
+  }
+  .section-head .count {
+    font-size: 13px;
+    color: var(--text-subtle);
+  }
+  .section-head .device {
+    font-size: 13px;
+    color: var(--text-muted);
+  }
+
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap: 20px;
+  }
+
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 20px;
+    text-decoration: none;
+    color: inherit;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    min-height: 220px;
+    transition: border-color 0.15s ease, background 0.15s ease;
+  }
+  .card:hover {
+    border-color: var(--border-strong);
+  }
+  .card.pending {
+    border-style: dashed;
+    background: transparent;
+    opacity: 0.65;
+  }
+  .card.pending:hover { opacity: 0.9; }
+  .card-num {
+    font-size: 13px;
+    color: var(--text-subtle);
+    letter-spacing: 0.02em;
+  }
+  .card-title {
+    font-size: 16px;
+    font-weight: 500;
+    line-height: 1.35;
+    margin: 0;
+  }
+  .card-desc {
+    font-size: 13px;
+    color: var(--text-muted);
+    line-height: 1.5;
+    margin: 0;
+    flex: 1;
+  }
+  .card-foot {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-size: 12px;
+    color: var(--text-subtle);
+  }
+  .status {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 3px 10px;
+    border-radius: 999px;
+    font-size: 12px;
+  }
+  .status.ready {
+    background: var(--brand-light);
+    color: var(--brand-text);
+  }
+  .status.pending {
+    background: transparent;
+    color: var(--text-subtle);
+    border: 1px dashed var(--border-strong);
+  }
+  .status .dot {
+    width: 6px; height: 6px;
+    border-radius: 999px;
+    background: currentColor;
+  }
+</style>
+</head>
+<body>
+
+<div class="wrap">
+
+  <header>
+    <span class="brand"><span class="dot"></span>Smart Garcom · Mockups</span>
+    <span class="meta-pill"><i class="ti ti-flag" aria-hidden="true"></i>Maputo · Português</span>
+  </header>
+
+  <div class="lede">
+    <h1>Exploração visual dos 3 frontends</h1>
+    <p>Mockups hi-fi do cliente (mesa via QR), do empregado/balcão (tablet) e do KDS (cozinha). Cada ecrã é independente e mostra um estado representativo. Os ecrãs com tracejado ainda não foram desenhados.</p>
+  </div>
+
+  <!-- Customer app -->
+  <section>
+    <div class="section-head">
+      <h2>Customer app</h2>
+      <span class="device">Mobile · 375 × 812</span>
+    </div>
+    <div class="grid">
+
+      <a class="card" href="customer/01-splash.html">
+        <span class="card-num">01</span>
+        <h3 class="card-title">Splash / scan QR</h3>
+        <p class="card-desc">Boas-vindas após scan. Identifica restaurante e mesa, dá CTA único para ver menu.</p>
+        <div class="card-foot">
+          <span class="status ready"><span class="dot"></span>Pronto</span>
+          <span>Costa do Sol · Mesa 12</span>
+        </div>
+      </a>
+
+      <a class="card" href="customer/02-menu.html">
+        <span class="card-num">02</span>
+        <h3 class="card-title">Menu principal</h3>
+        <p class="card-desc">Categorias horizontais, items com fotos, cart bar inferior.</p>
+        <div class="card-foot">
+          <span class="status ready"><span class="dot"></span>Pronto</span>
+          <span>Pratos principais · 3 no carrinho</span>
+        </div>
+      </a>
+
+      <a class="card" href="customer/03-detalhe.html">
+        <span class="card-num">03</span>
+        <h3 class="card-title">Detalhe de item</h3>
+        <p class="card-desc">Foto, descrição, modificadores, adicionar.</p>
+        <div class="card-foot">
+          <span class="status ready"><span class="dot"></span>Pronto</span>
+          <span>Frango à zambeziana</span>
+        </div>
+      </a>
+
+      <a class="card" href="customer/04-carrinho.html">
+        <span class="card-num">04</span>
+        <h3 class="card-title">Carrinho</h3>
+        <p class="card-desc">Items, totais, observações, enviar pedido.</p>
+        <div class="card-foot">
+          <span class="status ready"><span class="dot"></span>Pronto</span>
+          <span>4 items · 1.760,00 MT</span>
+        </div>
+      </a>
+
+      <a class="card" href="customer/05-pedido-em-curso.html">
+        <span class="card-num">05</span>
+        <h3 class="card-title">Pedido em curso</h3>
+        <p class="card-desc">Estado dos items em tempo real, timer estimado.</p>
+        <div class="card-foot">
+          <span class="status ready"><span class="dot"></span>Pronto</span>
+          <span>~12 min · estados mistos</span>
+        </div>
+      </a>
+
+      <a class="card" href="customer/06-pronto.html">
+        <span class="card-num">06</span>
+        <h3 class="card-title">Pedido pronto</h3>
+        <p class="card-desc">Notificação visual de item pronto.</p>
+        <div class="card-foot">
+          <span class="status ready"><span class="dot"></span>Pronto</span>
+          <span>Matapa · takeover</span>
+        </div>
+      </a>
+
+      <a class="card" href="customer/07-conta.html">
+        <span class="card-num">07</span>
+        <h3 class="card-title">Conta da mesa</h3>
+        <p class="card-desc">Items consumidos, total, pedir conta.</p>
+        <div class="card-foot">
+          <span class="status ready"><span class="dot"></span>Pronto</span>
+          <span>1.936,00 MT · taxa ON</span>
+        </div>
+      </a>
+
+      <div class="card pending">
+        <span class="card-num">08</span>
+        <h3 class="card-title">Dividir conta</h3>
+        <p class="card-desc">Igualmente, por item, por valor.</p>
+        <div class="card-foot"><span class="status pending">Por desenhar</span></div>
+      </div>
+
+      <div class="card pending">
+        <span class="card-num">09</span>
+        <h3 class="card-title">Chamar empregado</h3>
+        <p class="card-desc">Botão e confirmação.</p>
+        <div class="card-foot"><span class="status pending">Por desenhar</span></div>
+      </div>
+
+      <div class="card pending">
+        <span class="card-num">10</span>
+        <h3 class="card-title">Menu lateral / perfil</h3>
+        <p class="card-desc">Opcional, MVP minimalista.</p>
+        <div class="card-foot"><span class="status pending">Por desenhar</span></div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- Counter -->
+  <section>
+    <div class="section-head">
+      <h2>Counter / Empregado</h2>
+      <span class="device">Tablet landscape · 1024 × 768</span>
+    </div>
+    <div class="grid">
+      <div class="card pending">
+        <span class="card-num">01</span>
+        <h3 class="card-title">Vista geral de mesas</h3>
+        <p class="card-desc">Grid de mesas com estados, notificações pendentes.</p>
+        <div class="card-foot"><span class="status pending">Por desenhar</span></div>
+      </div>
+      <div class="card pending">
+        <span class="card-num">02</span>
+        <h3 class="card-title">Detalhe de mesa</h3>
+        <p class="card-desc">Pedidos abertos, items, conta acumulada.</p>
+        <div class="card-foot"><span class="status pending">Por desenhar</span></div>
+      </div>
+      <div class="card pending">
+        <span class="card-num">03</span>
+        <h3 class="card-title">Lista de pedidos activos</h3>
+        <p class="card-desc">Todos pedidos de todas as mesas.</p>
+        <div class="card-foot"><span class="status pending">Por desenhar</span></div>
+      </div>
+      <div class="card pending">
+        <span class="card-num">04</span>
+        <h3 class="card-title">Fechar conta</h3>
+        <p class="card-desc">Pagamento, total, troco.</p>
+        <div class="card-foot"><span class="status pending">Por desenhar</span></div>
+      </div>
+      <div class="card pending">
+        <span class="card-num">05</span>
+        <h3 class="card-title">Notificações</h3>
+        <p class="card-desc">Chamadas, alertas SLA.</p>
+        <div class="card-foot"><span class="status pending">Por desenhar</span></div>
+      </div>
+      <div class="card pending">
+        <span class="card-num">06</span>
+        <h3 class="card-title">Configuração rápida</h3>
+        <p class="card-desc">Disponibilidade de items (86'd).</p>
+        <div class="card-foot"><span class="status pending">Por desenhar</span></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- KDS -->
+  <section>
+    <div class="section-head">
+      <h2>KDS — Kitchen Display</h2>
+      <span class="device">Tablet landscape · 1024 × 768</span>
+    </div>
+    <div class="grid">
+      <div class="card pending">
+        <span class="card-num">01</span>
+        <h3 class="card-title">Vista principal</h3>
+        <p class="card-desc">Items pendentes agrupados por mesa, timers SLA.</p>
+        <div class="card-foot"><span class="status pending">Por desenhar</span></div>
+      </div>
+      <div class="card pending">
+        <span class="card-num">02</span>
+        <h3 class="card-title">Item em destaque</h3>
+        <p class="card-desc">Chef toca para "claim", item destacado.</p>
+        <div class="card-foot"><span class="status pending">Por desenhar</span></div>
+      </div>
+      <div class="card pending">
+        <span class="card-num">03</span>
+        <h3 class="card-title">Items atrasados</h3>
+        <p class="card-desc">Filtro/secção para items overdue.</p>
+        <div class="card-foot"><span class="status pending">Por desenhar</span></div>
+      </div>
+      <div class="card pending">
+        <span class="card-num">04</span>
+        <h3 class="card-title">Histórico do turno</h3>
+        <p class="card-desc">Items completados, métricas básicas.</p>
+        <div class="card-foot"><span class="status pending">Por desenhar</span></div>
+      </div>
+    </div>
+  </section>
+
+</div>
+
+</body>
+</html>

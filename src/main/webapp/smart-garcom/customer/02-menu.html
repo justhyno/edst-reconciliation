@@ -1,0 +1,957 @@
+<!doctype html>
+<html lang="pt">
+<head>
+<meta charset="utf-8">
+<title>Customer app — Menu principal — Costa do Sol, Mesa 12</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/dist/tabler-icons.min.css">
+<style>
+  :root {
+    --bg: #FAFAF7;
+    --surface: #FFFFFF;
+    --border: rgba(0,0,0,0.08);
+    --border-strong: rgba(0,0,0,0.16);
+    --text: #1A1A1A;
+    --text-muted: #6B6B6B;
+    --text-subtle: #9A9A9A;
+
+    --brand: #1D9E75;
+    --brand-hover: #0F6E56;
+    --brand-light: #E1F5EE;
+    --brand-text: #085041;
+
+    --success: #1D9E75;
+    --warning: #BA7517;
+    --warning-light: #FAEEDA;
+    --danger: #E24B4A;
+    --danger-light: #FCEBEB;
+    --info: #378ADD;
+    --info-light: #E6F1FB;
+
+    --page-bg: #EFEEEA;
+    --page-text: #2A2A2A;
+    --page-text-muted: #6B6B6B;
+    --pin: #1A1A1A;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #1A1A1A;
+      --surface: #2A2A2A;
+      --border: rgba(255,255,255,0.08);
+      --border-strong: rgba(255,255,255,0.16);
+      --text: #F0F0F0;
+      --text-muted: #B0B0B0;
+      --text-subtle: #808080;
+      --brand-light: #085041;
+      --brand-text: #9FE1CB;
+    }
+  }
+
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0;
+    font-family: 'Inter', system-ui, sans-serif;
+    background: var(--page-bg);
+    color: var(--page-text);
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+
+  /* Page layout */
+  .page {
+    min-height: 100vh;
+    display: grid;
+    grid-template-columns: 1fr 420px;
+    gap: 40px;
+    padding: 32px 40px;
+    align-items: start;
+  }
+  .stage {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 24px;
+  }
+  .meta { width: 100%; max-width: 460px; text-align: center; }
+  .meta .crumb {
+    font-size: 13px;
+    color: var(--page-text-muted);
+    letter-spacing: 0.02em;
+  }
+  .meta h1 {
+    font-size: 20px;
+    font-weight: 500;
+    margin: 4px 0 0;
+    color: var(--page-text);
+  }
+  .meta .state {
+    display: inline-block;
+    margin-top: 8px;
+    font-size: 12px;
+    padding: 3px 10px;
+    border-radius: 999px;
+    background: #fff;
+    border: 1px solid rgba(0,0,0,0.08);
+    color: var(--page-text-muted);
+  }
+
+  /* Frame */
+  .frame-wrap { position: relative; width: 396px; height: 832px; }
+  .frame {
+    position: absolute; inset: 0;
+    background: #0B0B0B;
+    border-radius: 56px;
+    padding: 10px;
+    box-shadow: 0 0 0 1.5px #2a2a2a inset,
+                0 30px 60px -20px rgba(0,0,0,0.3),
+                0 10px 20px -10px rgba(0,0,0,0.15);
+  }
+  .screen {
+    position: relative;
+    width: 100%; height: 100%;
+    border-radius: 46px;
+    overflow: hidden;
+    background: var(--bg);
+    color: var(--text);
+    display: flex;
+    flex-direction: column;
+  }
+  .dyn-island {
+    position: absolute; top: 12px; left: 50%;
+    transform: translateX(-50%);
+    width: 120px; height: 34px;
+    background: #000;
+    border-radius: 20px;
+    z-index: 10;
+  }
+
+  .status-bar {
+    height: 54px;
+    padding: 18px 28px 0;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 15px;
+    font-weight: 500;
+    flex-shrink: 0;
+  }
+  .status-right { display: flex; align-items: center; gap: 6px; font-size: 14px; }
+  .status-right .battery {
+    display: inline-flex; align-items: center; gap: 2px;
+  }
+  .status-right .battery .cell {
+    width: 22px; height: 11px;
+    border: 1px solid var(--text);
+    border-radius: 3px;
+    padding: 1.5px;
+    position: relative;
+  }
+  .status-right .battery .cell::after {
+    content: ""; position: absolute;
+    right: -3px; top: 3px;
+    width: 2px; height: 5px;
+    background: var(--text);
+    border-radius: 0 1px 1px 0;
+  }
+  .status-right .battery .fill {
+    background: var(--text);
+    width: 80%; height: 100%;
+    border-radius: 1px;
+  }
+
+  .home-indicator {
+    position: absolute;
+    bottom: 8px; left: 50%;
+    transform: translateX(-50%);
+    width: 134px; height: 5px;
+    background: var(--text);
+    opacity: 0.85;
+    border-radius: 999px;
+    z-index: 20;
+  }
+
+  /* ===== Header area (sticky-feel) ===== */
+  .top-section {
+    background: var(--bg);
+    padding: 4px 20px 0;
+    flex-shrink: 0;
+  }
+
+  .header-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 6px 0 14px;
+  }
+  .resto-mini {
+    display: flex; align-items: center; gap: 10px;
+    flex: 1;
+    min-width: 0;
+  }
+  .resto-avatar {
+    width: 36px; height: 36px;
+    border-radius: 10px;
+    background: var(--brand-light);
+    color: var(--brand-text);
+    font-size: 13px;
+    font-weight: 500;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+  }
+  .resto-text {
+    display: flex; flex-direction: column;
+    line-height: 1.2;
+    min-width: 0;
+  }
+  .resto-text .name {
+    font-size: 15px;
+    font-weight: 500;
+    color: var(--text);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .resto-text .mesa {
+    font-size: 12px;
+    color: var(--text-muted);
+    margin-top: 2px;
+  }
+
+  .icon-btn {
+    width: 40px; height: 40px;
+    border-radius: 999px;
+    border: 1px solid var(--border);
+    background: var(--surface);
+    color: var(--text);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    flex-shrink: 0;
+    position: relative;
+  }
+  .icon-btn .ti { font-size: 18px; }
+  .icon-btn:hover { background: var(--bg); }
+
+  .search {
+    position: relative;
+    margin-bottom: 14px;
+  }
+  .search input {
+    width: 100%;
+    height: 44px;
+    border-radius: 12px;
+    border: 1px solid var(--border);
+    background: var(--surface);
+    color: var(--text);
+    padding: 0 14px 0 42px;
+    font-family: inherit;
+    font-size: 15px;
+    outline: none;
+  }
+  .search input::placeholder { color: var(--text-subtle); }
+  .search .ti {
+    position: absolute;
+    left: 14px; top: 50%;
+    transform: translateY(-50%);
+    color: var(--text-subtle);
+    font-size: 18px;
+  }
+
+  /* Category chips */
+  .chips {
+    display: flex;
+    gap: 8px;
+    overflow-x: auto;
+    padding: 4px 0 14px;
+    margin: 0 -20px;
+    padding-left: 20px;
+    padding-right: 20px;
+    scrollbar-width: none;
+  }
+  .chips::-webkit-scrollbar { display: none; }
+  .chip {
+    padding: 9px 16px;
+    border-radius: 999px;
+    border: 1px solid var(--border);
+    background: var(--surface);
+    color: var(--text-muted);
+    font-size: 14px;
+    font-family: inherit;
+    cursor: pointer;
+    white-space: nowrap;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    flex-shrink: 0;
+  }
+  .chip:hover { color: var(--text); }
+  .chip.active {
+    background: var(--text);
+    color: var(--bg);
+    border-color: var(--text);
+  }
+
+  /* Scrollable item list */
+  .list-scroll {
+    flex: 1;
+    overflow-y: auto;
+    padding: 4px 20px 100px; /* room for cart bar */
+    min-height: 0;
+  }
+
+  .section-title-row {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    padding: 14px 0 12px;
+  }
+  .section-title {
+    font-size: 18px;
+    font-weight: 500;
+    color: var(--text);
+    letter-spacing: -0.01em;
+    margin: 0;
+  }
+  .section-count {
+    font-size: 13px;
+    color: var(--text-subtle);
+  }
+
+  /* Item card */
+  .item {
+    display: grid;
+    grid-template-columns: 96px 1fr;
+    gap: 14px;
+    padding: 14px 0;
+    border-bottom: 1px solid var(--border);
+    position: relative;
+  }
+  .item:last-of-type { border-bottom: 0; }
+
+  .item-photo {
+    width: 96px; height: 96px;
+    border-radius: 12px;
+    background-color: #C9C2B2;
+    background-size: cover;
+    background-position: center;
+    position: relative;
+    overflow: hidden;
+    flex-shrink: 0;
+  }
+  /* Stylized food-placeholder gradients per dish */
+  .photo-matapa {
+    background:
+      radial-gradient(circle at 30% 30%, #87A058 0%, transparent 60%),
+      radial-gradient(circle at 70% 70%, #D88A4F 0%, transparent 60%),
+      linear-gradient(135deg, #5C7A3A, #3F5226);
+  }
+  .photo-frango {
+    background:
+      radial-gradient(circle at 30% 30%, #E89060 0%, transparent 55%),
+      radial-gradient(circle at 70% 80%, #8F2716 0%, transparent 55%),
+      linear-gradient(135deg, #C24A1F, #842D14);
+  }
+  .photo-camarao {
+    background:
+      radial-gradient(circle at 25% 25%, #FFC1A0 0%, transparent 55%),
+      radial-gradient(circle at 75% 75%, #B23E16 0%, transparent 55%),
+      linear-gradient(135deg, #D85A30, #993C1D);
+  }
+  .photo-espetada {
+    background:
+      radial-gradient(circle at 30% 30%, #B5704A 0%, transparent 55%),
+      radial-gradient(circle at 70% 70%, #4A2410 0%, transparent 55%),
+      linear-gradient(135deg, #7A3F1F, #4F2812);
+  }
+  .photo-peixe {
+    background:
+      radial-gradient(circle at 30% 30%, #E8D27A 0%, transparent 55%),
+      radial-gradient(circle at 70% 70%, #8A6D2C 0%, transparent 55%),
+      linear-gradient(135deg, #B5995A, #7A6535);
+  }
+
+  .photo-tag {
+    position: absolute;
+    bottom: 6px; left: 6px;
+    background: rgba(255,255,255,0.92);
+    color: #444;
+    font-size: 10px;
+    padding: 2px 6px;
+    border-radius: 999px;
+    letter-spacing: 0.02em;
+  }
+
+  .item-photo.sold-out::after {
+    content: "";
+    position: absolute; inset: 0;
+    background: rgba(255,255,255,0.65);
+  }
+  .sold-out-tag {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 2;
+    font-size: 12px;
+    font-weight: 500;
+    color: #1A1A1A;
+    background: rgba(255,255,255,0.4);
+  }
+  .sold-out-tag span {
+    background: var(--surface);
+    padding: 4px 10px;
+    border-radius: 999px;
+    border: 1px solid var(--border-strong);
+  }
+
+  .item-body {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    justify-content: space-between;
+  }
+  .item-head {
+    display: flex;
+    gap: 8px;
+    align-items: flex-start;
+  }
+  .item-name {
+    font-size: 16px;
+    font-weight: 500;
+    color: var(--text);
+    line-height: 1.3;
+    margin: 0;
+    flex: 1;
+    min-width: 0;
+  }
+  .item-tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+    font-size: 11px;
+    padding: 2px 7px;
+    border-radius: 999px;
+    background: var(--warning-light);
+    color: var(--warning);
+    flex-shrink: 0;
+    margin-top: 1px;
+  }
+  .item-tag.spicy { background: var(--danger-light); color: var(--danger); }
+  .item-tag .ti { font-size: 11px; }
+
+  .item-desc {
+    font-size: 13px;
+    color: var(--text-muted);
+    line-height: 1.5;
+    margin: 4px 0 0;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
+  .item-foot {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-top: 8px;
+  }
+  .item-price {
+    font-size: 15px;
+    font-weight: 500;
+    color: var(--text);
+  }
+  .item-price.muted { color: var(--text-subtle); }
+
+  .add-btn {
+    width: 36px; height: 36px;
+    border-radius: 999px;
+    background: var(--text);
+    color: var(--bg);
+    border: none;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .add-btn .ti { font-size: 20px; }
+  .add-btn:hover { background: var(--brand); color: #fff; }
+  .add-btn.disabled {
+    background: transparent;
+    border: 1px dashed var(--border-strong);
+    color: var(--text-subtle);
+    cursor: not-allowed;
+  }
+
+  /* Quantity stepper (when item is in cart) */
+  .stepper {
+    display: inline-flex;
+    align-items: center;
+    gap: 0;
+    background: var(--brand-light);
+    border-radius: 999px;
+    padding: 4px;
+  }
+  .stepper button {
+    width: 28px; height: 28px;
+    border: none;
+    border-radius: 999px;
+    background: transparent;
+    color: var(--brand-text);
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .stepper button:hover { background: rgba(0,0,0,0.05); }
+  .stepper .qty {
+    min-width: 24px;
+    text-align: center;
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--brand-text);
+    padding: 0 2px;
+  }
+
+  .item.in-cart .item-name::after {
+    content: "";
+    display: inline-block;
+    width: 6px; height: 6px;
+    border-radius: 999px;
+    background: var(--brand);
+    margin-left: 8px;
+    vertical-align: middle;
+  }
+
+  .item.sold-out .item-name,
+  .item.sold-out .item-desc { color: var(--text-subtle); }
+
+  /* Cart bar */
+  .cart-bar {
+    position: absolute;
+    left: 12px;
+    right: 12px;
+    bottom: 28px;
+    height: 60px;
+    background: var(--brand);
+    color: #fff;
+    border-radius: 14px;
+    padding: 0 12px 0 18px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    z-index: 15;
+    box-shadow: 0 8px 24px -6px rgba(15,110,86,0.45);
+  }
+  .cart-count {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 24px;
+    height: 24px;
+    padding: 0 7px;
+    border-radius: 999px;
+    background: rgba(255,255,255,0.2);
+    font-size: 13px;
+    font-weight: 500;
+  }
+  .cart-label {
+    font-size: 15px;
+    font-weight: 500;
+  }
+  .cart-spacer { flex: 1; }
+  .cart-total {
+    font-size: 16px;
+    font-weight: 500;
+    letter-spacing: -0.01em;
+  }
+  .cart-go {
+    width: 36px; height: 36px;
+    border-radius: 999px;
+    background: rgba(255,255,255,0.15);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .cart-go .ti { font-size: 18px; }
+
+  .badge-dot {
+    position: absolute;
+    top: 6px; right: 6px;
+    width: 8px; height: 8px;
+    background: var(--danger);
+    border: 1.5px solid var(--surface);
+    border-radius: 999px;
+  }
+
+  /* Pins */
+  .pins { position: absolute; inset: 0; pointer-events: none; }
+  .pin {
+    position: absolute;
+    width: 24px; height: 24px;
+    border-radius: 999px;
+    background: var(--pin);
+    color: #fff;
+    font-size: 12px;
+    font-weight: 500;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .pin::before {
+    content: ""; position: absolute; inset: -2px;
+    border-radius: 999px; border: 2px solid #fff;
+  }
+
+  /* Notes */
+  .notes {
+    position: sticky; top: 32px;
+    background: #fff;
+    border: 1px solid rgba(0,0,0,0.06);
+    border-radius: 16px;
+    padding: 24px 26px 28px;
+  }
+  .notes h2 {
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--page-text-muted);
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    margin: 0 0 16px;
+  }
+  .notes-title {
+    font-size: 18px;
+    font-weight: 500;
+    margin: 0 0 4px;
+    letter-spacing: -0.01em;
+  }
+  .notes-sub {
+    font-size: 13px;
+    color: var(--page-text-muted);
+    margin: 0 0 20px;
+    line-height: 1.5;
+  }
+  .note-list {
+    margin: 0; padding: 0; list-style: none;
+    display: flex; flex-direction: column; gap: 16px;
+  }
+  .note-list li {
+    display: grid;
+    grid-template-columns: 26px 1fr;
+    gap: 12px;
+    align-items: start;
+  }
+  .note-num {
+    width: 24px; height: 24px;
+    border-radius: 999px;
+    background: var(--pin);
+    color: #fff;
+    font-size: 12px;
+    font-weight: 500;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    margin-top: 1px;
+  }
+  .note-body {
+    font-size: 14px;
+    line-height: 1.55;
+    color: var(--page-text);
+  }
+  .note-body strong { font-weight: 500; }
+  .note-body em { font-style: normal; color: var(--page-text-muted); }
+  .legend {
+    margin-top: 28px;
+    padding-top: 20px;
+    border-top: 1px solid rgba(0,0,0,0.06);
+    display: grid;
+    grid-template-columns: auto 1fr;
+    gap: 8px 14px;
+    font-size: 13px;
+    color: var(--page-text-muted);
+  }
+  .legend dt { color: var(--page-text); font-weight: 500; }
+  .return {
+    margin-top: 24px;
+    display: inline-flex; align-items: center; gap: 6px;
+    font-size: 13px;
+    color: var(--page-text-muted);
+    text-decoration: none;
+  }
+  .return:hover { color: var(--page-text); }
+
+</style>
+</head>
+<body>
+
+<div class="page">
+
+  <div class="stage">
+    <div class="meta">
+      <div class="crumb">Customer app · iPhone 14 · 375 × 812</div>
+      <h1>02 — Menu principal</h1>
+      <span class="state">Categoria "Pratos principais" · 3 items no carrinho</span>
+    </div>
+
+    <div class="frame-wrap" data-screen-label="Customer 02 — Menu">
+      <div class="frame">
+        <div class="screen">
+
+          <div class="dyn-island"></div>
+
+          <div class="status-bar">
+            <span>9:41</span>
+            <div class="status-right">
+              <i class="ti ti-signal-4g" aria-hidden="true"></i>
+              <i class="ti ti-wifi" aria-hidden="true"></i>
+              <span class="battery"><span class="cell"><span class="fill"></span></span></span>
+            </div>
+          </div>
+
+          <div class="top-section">
+            <div class="header-row">
+              <div class="resto-mini">
+                <div class="resto-avatar">CS</div>
+                <div class="resto-text">
+                  <span class="name">Costa do Sol</span>
+                  <span class="mesa">Mesa 12 · Sessão activa</span>
+                </div>
+              </div>
+              <button class="icon-btn" aria-label="Chamar empregado">
+                <i class="ti ti-bell" aria-hidden="true"></i>
+                <span class="badge-dot"></span>
+              </button>
+              <button class="icon-btn" aria-label="Mais opções">
+                <i class="ti ti-dots" aria-hidden="true"></i>
+              </button>
+            </div>
+
+            <div class="search">
+              <i class="ti ti-search" aria-hidden="true"></i>
+              <input type="text" placeholder="Procurar pratos, bebidas..." />
+            </div>
+
+            <div class="chips">
+              <button class="chip">Entradas</button>
+              <button class="chip active">Pratos principais</button>
+              <button class="chip">Grelhados</button>
+              <button class="chip">Bebidas</button>
+              <button class="chip">Cervejas</button>
+              <button class="chip">Sobremesas</button>
+            </div>
+          </div>
+
+          <div class="list-scroll">
+
+            <div class="section-title-row">
+              <h2 class="section-title">Pratos principais</h2>
+              <span class="section-count">5 items</span>
+            </div>
+
+            <!-- Item 1 — in cart -->
+            <div class="item in-cart">
+              <div class="item-photo photo-matapa">
+                <span class="photo-tag">[matapa]</span>
+              </div>
+              <div class="item-body">
+                <div>
+                  <div class="item-head">
+                    <h3 class="item-name">Matapa com camarão</h3>
+                  </div>
+                  <p class="item-desc">Folhas de mandioca, camarão e amendoim. Servido com xima.</p>
+                </div>
+                <div class="item-foot">
+                  <span class="item-price">450,00 MT</span>
+                  <div class="stepper">
+                    <button aria-label="Remover"><i class="ti ti-minus" aria-hidden="true"></i></button>
+                    <span class="qty">1</span>
+                    <button aria-label="Adicionar"><i class="ti ti-plus" aria-hidden="true"></i></button>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Item 2 — in cart x2 -->
+            <div class="item in-cart">
+              <div class="item-photo photo-frango">
+                <span class="photo-tag">[frango]</span>
+              </div>
+              <div class="item-body">
+                <div>
+                  <div class="item-head">
+                    <h3 class="item-name">Frango à zambeziana</h3>
+                    <span class="item-tag spicy">
+                      <i class="ti ti-flame" aria-hidden="true"></i>Picante
+                    </span>
+                  </div>
+                  <p class="item-desc">Frango grelhado em molho de coco e piri-piri. Acompanha matapa e arroz.</p>
+                </div>
+                <div class="item-foot">
+                  <span class="item-price">380,00 MT</span>
+                  <div class="stepper">
+                    <button aria-label="Remover"><i class="ti ti-minus" aria-hidden="true"></i></button>
+                    <span class="qty">2</span>
+                    <button aria-label="Adicionar"><i class="ti ti-plus" aria-hidden="true"></i></button>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Item 3 — sold out -->
+            <div class="item sold-out">
+              <div class="item-photo photo-camarao sold-out">
+                <span class="photo-tag">[camarão]</span>
+                <div class="sold-out-tag"><span>Esgotado</span></div>
+              </div>
+              <div class="item-body">
+                <div>
+                  <div class="item-head">
+                    <h3 class="item-name">Camarão grelhado piri-piri</h3>
+                  </div>
+                  <p class="item-desc">Camarão LM grelhado, manteiga de alho, limão e piri-piri.</p>
+                </div>
+                <div class="item-foot">
+                  <span class="item-price muted">620,00 MT</span>
+                  <button class="add-btn disabled" disabled aria-label="Indisponível">
+                    <i class="ti ti-x" aria-hidden="true"></i>
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <!-- Item 4 -->
+            <div class="item">
+              <div class="item-photo photo-espetada">
+                <span class="photo-tag">[espetadas]</span>
+              </div>
+              <div class="item-body">
+                <div>
+                  <div class="item-head">
+                    <h3 class="item-name">Espetadas mistas</h3>
+                  </div>
+                  <p class="item-desc">Vaca, frango e chouriço grelhados em espeto. Servido com batata frita.</p>
+                </div>
+                <div class="item-foot">
+                  <span class="item-price">350,00 MT</span>
+                  <button class="add-btn" aria-label="Adicionar">
+                    <i class="ti ti-plus" aria-hidden="true"></i>
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <!-- Item 5 -->
+            <div class="item">
+              <div class="item-photo photo-peixe">
+                <span class="photo-tag">[peixe]</span>
+              </div>
+              <div class="item-body">
+                <div>
+                  <div class="item-head">
+                    <h3 class="item-name">Peixe grelhado do dia</h3>
+                    <span class="item-tag">
+                      <i class="ti ti-clock-hour-3" aria-hidden="true"></i>~25 min
+                    </span>
+                  </div>
+                  <p class="item-desc">Garoupa grelhada, molho de tomate e azeite. Pergunte ao empregado.</p>
+                </div>
+                <div class="item-foot">
+                  <span class="item-price">480,00 MT</span>
+                  <button class="add-btn" aria-label="Adicionar">
+                    <i class="ti ti-plus" aria-hidden="true"></i>
+                  </button>
+                </div>
+              </div>
+            </div>
+
+          </div>
+
+          <!-- Cart bar -->
+          <div class="cart-bar">
+            <span class="cart-count">3</span>
+            <span class="cart-label">Ver carrinho</span>
+            <span class="cart-spacer"></span>
+            <span class="cart-total">1.210,00 MT</span>
+            <span class="cart-go"><i class="ti ti-arrow-right" aria-hidden="true"></i></span>
+          </div>
+
+          <div class="home-indicator"></div>
+        </div>
+      </div>
+
+      <!-- Pins -->
+      <div class="pins">
+        <div class="pin" style="top: 84px; left: 90px;">1</div>
+        <div class="pin" style="top: 84px; right: 24px;">2</div>
+        <div class="pin" style="top: 158px; left: 50%; transform: translateX(-50%);">3</div>
+        <div class="pin" style="top: 226px; left: 132px;">4</div>
+        <div class="pin" style="top: 326px; left: 24px;">5</div>
+        <div class="pin" style="top: 396px; right: 28px;">6</div>
+        <div class="pin" style="top: 482px; left: 60px;">7</div>
+        <div class="pin" style="bottom: 100px; left: 50%; transform: translateX(-50%);">8</div>
+      </div>
+    </div>
+  </div>
+
+  <aside class="notes">
+    <h2>Anotações de design</h2>
+    <p class="notes-title">Densidade controlada, decisão em segundos</p>
+    <p class="notes-sub">Princípio "pedir em &lt;30s": header compacto, categorias navegáveis numa mão, items com foto grande e CTA imediato. O carrinho é sempre visível mas nunca tapa conteúdo crítico.</p>
+
+    <ol class="note-list">
+      <li>
+        <span class="note-num">1</span>
+        <span class="note-body"><strong>Header compacto com mesa sempre visível</strong> — o cliente nunca perde contexto de onde está. Avatar quadrado pequeno + "Mesa 12 · Sessão activa". <em>Substitui a navegação clássica "voltar"; aqui não há para onde voltar.</em></span>
+      </li>
+      <li>
+        <span class="note-num">2</span>
+        <span class="note-body"><strong>Atalho "chamar empregado" no header</strong> — ícone de sino com ponto de notificação subtil. Acessível sem scroll. Liga ao ecrã 09.</span>
+      </li>
+      <li>
+        <span class="note-num">3</span>
+        <span class="note-body"><strong>Pesquisa acima das categorias</strong> — quem sabe o que quer escreve; quem está a explorar usa os chips. Reduz tempo de decisão para clientes recorrentes.</span>
+      </li>
+      <li>
+        <span class="note-num">4</span>
+        <span class="note-body"><strong>Chip activo invertido (escuro)</strong> em vez de verde — mantém o verde brand para acções primárias (cart, CTAs). Categoria seleccionada não é uma "acção".</span>
+      </li>
+      <li>
+        <span class="note-num">5</span>
+        <span class="note-body"><strong>Foto 96×96 — grande o suficiente</strong> para distinguir, pequena o suficiente para caberem 4+ items no viewport. Placeholders coloridos por dish (matapa verde, frango ocre, peixe dourado) — em produção, fotografias reais.</span>
+      </li>
+      <li>
+        <span class="note-num">6</span>
+        <span class="note-body"><strong>Tags inline ("Picante", "~25 min")</strong> — informação útil sem abrir o detalhe. Tempo de preparação na lista evita surpresas em pratos lentos.</span>
+      </li>
+      <li>
+        <span class="note-num">7</span>
+        <span class="note-body"><strong>Estado "Esgotado" honesto</strong> — overlay branco sobre a foto, preço esbatido, botão substituído por "×". Não escondemos o item (cliente pode voltar mais tarde); só impedimos o pedido.</span>
+      </li>
+      <li>
+        <span class="note-num">8</span>
+        <span class="note-body"><strong>Cart bar flutuante, não sticky-bottom rígido</strong> — margem lateral + sombra suave para se ler como "acção", não chrome. Mostra contagem (3), label, total formatado <em>1.210,00 MT</em> (formato MZ).</span>
+      </li>
+    </ol>
+
+    <dl class="legend">
+      <dt>Items no carrinho</dt>
+      <dd>Stepper verde em vez de botão "+" · ponto verde junto ao nome · alimenta cart bar inferior</dd>
+      <dt>Formato moeda</dt>
+      <dd>Separador milhares "." · decimal "," · sufixo "MT" — convenção moçambicana</dd>
+      <dt>Estados alternativos</dt>
+      <dd>Cart vazio (sem bar) · pesquisa activa · categoria com sub-secções · menu fora de horário</dd>
+    </dl>
+
+    <a class="return" href="../index.html">
+      <i class="ti ti-arrow-left" aria-hidden="true"></i>
+      Voltar ao índice
+    </a>
+  </aside>
+
+</div>
+
+</body>
+</html>

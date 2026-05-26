@@ -1,0 +1,697 @@
+<!doctype html>
+<html lang="pt">
+<head>
+<meta charset="utf-8">
+<title>Customer app — Conta da mesa — Mesa 12</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/dist/tabler-icons.min.css">
+<style>
+  :root {
+    --bg: #FAFAF7;
+    --surface: #FFFFFF;
+    --border: rgba(0,0,0,0.08);
+    --border-strong: rgba(0,0,0,0.16);
+    --text: #1A1A1A;
+    --text-muted: #6B6B6B;
+    --text-subtle: #9A9A9A;
+
+    --brand: #1D9E75;
+    --brand-hover: #0F6E56;
+    --brand-light: #E1F5EE;
+    --brand-text: #085041;
+
+    --warning: #BA7517;
+    --warning-light: #FAEEDA;
+    --danger: #E24B4A;
+    --info: #378ADD;
+    --info-light: #E6F1FB;
+
+    --page-bg: #EFEEEA;
+    --page-text: #2A2A2A;
+    --page-text-muted: #6B6B6B;
+    --pin: #1A1A1A;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #1A1A1A; --surface: #2A2A2A;
+      --border: rgba(255,255,255,0.08);
+      --border-strong: rgba(255,255,255,0.16);
+      --text: #F0F0F0; --text-muted: #B0B0B0; --text-subtle: #808080;
+      --brand-light: #085041; --brand-text: #9FE1CB;
+    }
+  }
+
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0;
+    font-family: 'Inter', system-ui, sans-serif;
+    background: var(--page-bg);
+    color: var(--page-text);
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+
+  .page {
+    min-height: 100vh;
+    display: grid;
+    grid-template-columns: 1fr 420px;
+    gap: 40px;
+    padding: 32px 40px;
+    align-items: start;
+  }
+  .stage { display: flex; flex-direction: column; align-items: center; gap: 24px; }
+  .meta { width: 100%; max-width: 460px; text-align: center; }
+  .meta .crumb { font-size: 13px; color: var(--page-text-muted); letter-spacing: 0.02em; }
+  .meta h1 { font-size: 20px; font-weight: 500; margin: 4px 0 0; color: var(--page-text); }
+  .meta .state {
+    display: inline-block; margin-top: 8px; font-size: 12px;
+    padding: 3px 10px; border-radius: 999px;
+    background: #fff; border: 1px solid rgba(0,0,0,0.08);
+    color: var(--page-text-muted);
+  }
+
+  .frame-wrap { position: relative; width: 396px; height: 832px; }
+  .frame {
+    position: absolute; inset: 0; background: #0B0B0B;
+    border-radius: 56px; padding: 10px;
+    box-shadow: 0 0 0 1.5px #2a2a2a inset,
+                0 30px 60px -20px rgba(0,0,0,0.3),
+                0 10px 20px -10px rgba(0,0,0,0.15);
+  }
+  .screen {
+    position: relative; width: 100%; height: 100%;
+    border-radius: 46px; overflow: hidden;
+    background: var(--bg); color: var(--text);
+    display: flex; flex-direction: column;
+  }
+  .dyn-island {
+    position: absolute; top: 12px; left: 50%; transform: translateX(-50%);
+    width: 120px; height: 34px; background: #000;
+    border-radius: 20px; z-index: 10;
+  }
+  .home-indicator {
+    position: absolute; bottom: 8px; left: 50%; transform: translateX(-50%);
+    width: 134px; height: 5px; background: var(--text);
+    opacity: 0.85; border-radius: 999px; z-index: 30;
+  }
+
+  .status-bar {
+    height: 54px; padding: 18px 28px 0;
+    display: flex; justify-content: space-between; align-items: center;
+    font-size: 15px; font-weight: 500; flex-shrink: 0;
+  }
+  .status-right { display: flex; align-items: center; gap: 6px; font-size: 14px; }
+  .status-right .battery { display: inline-flex; align-items: center; }
+  .status-right .battery .cell {
+    width: 22px; height: 11px;
+    border: 1px solid var(--text);
+    border-radius: 3px; padding: 1.5px; position: relative;
+  }
+  .status-right .battery .cell::after {
+    content: ""; position: absolute;
+    right: -3px; top: 3px;
+    width: 2px; height: 5px;
+    background: var(--text); border-radius: 0 1px 1px 0;
+  }
+  .status-right .battery .fill {
+    background: var(--text); width: 80%; height: 100%; border-radius: 1px;
+  }
+
+  .top-section { padding: 4px 20px 0; flex-shrink: 0; }
+  .nav-row {
+    display: flex; align-items: center; gap: 12px;
+    padding: 6px 0 12px;
+  }
+  .icon-btn {
+    width: 40px; height: 40px;
+    border-radius: 999px;
+    border: 1px solid var(--border);
+    background: var(--surface);
+    color: var(--text);
+    display: inline-flex; align-items: center; justify-content: center;
+    cursor: pointer; flex-shrink: 0;
+  }
+  .icon-btn .ti { font-size: 18px; }
+  .icon-btn:hover { background: var(--bg); }
+  .nav-title {
+    flex: 1;
+    font-size: 17px; font-weight: 500;
+    color: var(--text); text-align: center;
+    letter-spacing: -0.005em;
+  }
+
+  /* Scroll */
+  .scroll {
+    flex: 1;
+    overflow-y: auto;
+    padding: 4px 20px 132px;
+    min-height: 0;
+  }
+
+  /* Session card */
+  .session-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 14px 16px;
+    display: grid;
+    grid-template-columns: 36px 1fr auto;
+    gap: 12px;
+    align-items: center;
+  }
+  .session-card .avatar {
+    width: 36px; height: 36px;
+    border-radius: 10px;
+    background: var(--brand-light);
+    color: var(--brand-text);
+    font-size: 13px; font-weight: 500;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .session-card .info {
+    min-width: 0;
+    font-size: 14px;
+    color: var(--text);
+    line-height: 1.3;
+  }
+  .session-card .info .muted {
+    color: var(--text-muted);
+    font-size: 12px;
+    margin-top: 2px;
+    display: block;
+  }
+  .session-card .pill {
+    font-size: 11px;
+    background: var(--brand-light);
+    color: var(--brand-text);
+    padding: 4px 9px;
+    border-radius: 999px;
+  }
+
+  /* Receipt section */
+  .receipt {
+    margin-top: 18px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 8px 16px 16px;
+  }
+
+  .receipt-head {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    padding: 10px 0 8px;
+    border-bottom: 1px dashed var(--border);
+  }
+  .receipt-head .title {
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--text);
+  }
+  .receipt-head .meta {
+    font-size: 12px;
+    color: var(--text-subtle);
+  }
+
+  .receipt-row {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 10px;
+    padding: 12px 0;
+    border-bottom: 1px solid var(--border);
+    align-items: start;
+  }
+  .receipt-row:last-of-type { border-bottom: 0; }
+
+  .receipt-name {
+    font-size: 14px;
+    color: var(--text);
+    font-weight: 500;
+    display: flex;
+    align-items: baseline;
+    gap: 6px;
+    line-height: 1.3;
+  }
+  .receipt-qty {
+    color: var(--text-muted);
+    font-size: 13px;
+    font-weight: 400;
+  }
+  .receipt-mods {
+    margin-top: 4px;
+    font-size: 12px;
+    color: var(--text-muted);
+    line-height: 1.5;
+  }
+  .receipt-mods .extra {
+    color: var(--brand-text);
+  }
+  .receipt-mods .note {
+    color: var(--text-subtle);
+    font-style: italic;
+  }
+  .receipt-price {
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--text);
+    text-align: right;
+    white-space: nowrap;
+  }
+
+  /* Summary */
+  .summary {
+    margin-top: 16px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 12px 16px 16px;
+  }
+  .sum-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 14px;
+    color: var(--text-muted);
+    padding: 8px 0;
+  }
+  .sum-row .val { color: var(--text); font-weight: 500; }
+
+  .sum-row.toggle {
+    border-top: 1px solid var(--border);
+    border-bottom: 1px solid var(--border);
+    padding: 12px 0;
+    margin: 4px 0;
+  }
+  .sum-row.toggle .label-stack {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+  .sum-row.toggle .label-stack .sub {
+    font-size: 11px;
+    color: var(--text-subtle);
+  }
+  .toggle-switch {
+    width: 40px; height: 24px;
+    background: var(--brand);
+    border-radius: 999px;
+    position: relative;
+    cursor: pointer;
+    flex-shrink: 0;
+  }
+  .toggle-switch::after {
+    content: "";
+    position: absolute;
+    top: 2px; right: 2px;
+    width: 20px; height: 20px;
+    background: #fff;
+    border-radius: 999px;
+    transition: left 0.15s ease;
+  }
+  .toggle-switch.off { background: var(--border-strong); }
+  .toggle-switch.off::after { right: auto; left: 2px; }
+  .toggle-right {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .sum-row.total {
+    padding-top: 14px;
+    color: var(--text);
+    font-size: 16px;
+    font-weight: 500;
+  }
+  .sum-row.total .val {
+    font-size: 22px;
+    letter-spacing: -0.015em;
+    font-weight: 500;
+  }
+
+  /* Payment methods info */
+  .pay-info {
+    margin-top: 16px;
+    padding: 12px 14px;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    background: var(--surface);
+  }
+  .pay-title {
+    font-size: 12px;
+    color: var(--text-subtle);
+    letter-spacing: 0.04em;
+    margin-bottom: 10px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .pay-title .ti { font-size: 13px; }
+  .pay-methods {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+  .pay-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 4px 9px;
+    border-radius: 999px;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    font-size: 12px;
+    color: var(--text);
+  }
+  .pay-chip .ti { font-size: 13px; }
+  .pay-chip.mpesa { background: #E5F1E1; color: #2A6224; border-color: transparent; }
+  .pay-chip.emola { background: #FCE7E7; color: #993333; border-color: transparent; }
+  @media (prefers-color-scheme: dark) {
+    .pay-chip.mpesa { background: rgba(42,98,36,0.25); color: #C7E0BC; }
+    .pay-chip.emola { background: rgba(153,51,51,0.25); color: #EFB6B6; }
+  }
+
+  /* Bottom action bar */
+  .action-bar {
+    position: absolute;
+    left: 0; right: 0;
+    bottom: 0;
+    z-index: 20;
+    background: var(--surface);
+    border-top: 1px solid var(--border);
+    padding: 14px 20px 36px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .request-cta {
+    width: 100%;
+    height: 56px;
+    border-radius: 14px;
+    background: var(--brand);
+    color: #fff;
+    border: none;
+    font-family: inherit;
+    font-size: 16px;
+    font-weight: 500;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 20px;
+  }
+  .request-cta:hover { background: var(--brand-hover); }
+  .request-cta .label { display: inline-flex; align-items: center; gap: 8px; }
+  .request-cta .label .ti { font-size: 20px; }
+  .request-cta .total { font-size: 16px; font-weight: 500; letter-spacing: -0.01em; }
+
+  .split-link {
+    text-align: center;
+    background: transparent;
+    border: none;
+    color: var(--text-muted);
+    font-family: inherit;
+    font-size: 14px;
+    cursor: pointer;
+    padding: 6px;
+  }
+  .split-link:hover { color: var(--text); }
+  .split-link .ti { font-size: 14px; vertical-align: middle; margin-right: 4px; }
+
+  /* Pins */
+  .pins { position: absolute; inset: 0; pointer-events: none; }
+  .pin {
+    position: absolute;
+    width: 24px; height: 24px;
+    border-radius: 999px;
+    background: var(--pin);
+    color: #fff;
+    font-size: 12px;
+    font-weight: 500;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .pin::before {
+    content: ""; position: absolute; inset: -2px;
+    border-radius: 999px; border: 2px solid #fff;
+  }
+
+  /* Notes */
+  .notes {
+    position: sticky; top: 32px;
+    background: #fff;
+    border: 1px solid rgba(0,0,0,0.06);
+    border-radius: 16px;
+    padding: 24px 26px 28px;
+  }
+  .notes h2 {
+    font-size: 13px; font-weight: 500;
+    color: var(--page-text-muted);
+    letter-spacing: 0.06em; text-transform: uppercase;
+    margin: 0 0 16px;
+  }
+  .notes-title { font-size: 18px; font-weight: 500; margin: 0 0 4px; letter-spacing: -0.01em; }
+  .notes-sub { font-size: 13px; color: var(--page-text-muted); margin: 0 0 20px; line-height: 1.5; }
+  .note-list { margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 16px; }
+  .note-list li { display: grid; grid-template-columns: 26px 1fr; gap: 12px; align-items: start; }
+  .note-num {
+    width: 24px; height: 24px; border-radius: 999px;
+    background: var(--pin); color: #fff;
+    font-size: 12px; font-weight: 500;
+    display: inline-flex; align-items: center; justify-content: center;
+    margin-top: 1px;
+  }
+  .note-body { font-size: 14px; line-height: 1.55; color: var(--page-text); }
+  .note-body strong { font-weight: 500; }
+  .note-body em { font-style: normal; color: var(--page-text-muted); }
+  .legend {
+    margin-top: 28px; padding-top: 20px;
+    border-top: 1px solid rgba(0,0,0,0.06);
+    display: grid; grid-template-columns: auto 1fr;
+    gap: 8px 14px; font-size: 13px; color: var(--page-text-muted);
+  }
+  .legend dt { color: var(--page-text); font-weight: 500; }
+  .return {
+    margin-top: 24px;
+    display: inline-flex; align-items: center; gap: 6px;
+    font-size: 13px; color: var(--page-text-muted); text-decoration: none;
+  }
+  .return:hover { color: var(--page-text); }
+</style>
+</head>
+<body>
+
+<div class="page">
+  <div class="stage">
+    <div class="meta">
+      <div class="crumb">Customer app · iPhone 14 · 375 × 812</div>
+      <h1>07 — Conta da mesa</h1>
+      <span class="state">Refeição concluída · 4 items · taxa de serviço activa · 1.936,00 MT</span>
+    </div>
+
+    <div class="frame-wrap" data-screen-label="Customer 07 — Conta">
+      <div class="frame">
+        <div class="screen">
+
+          <div class="dyn-island"></div>
+
+          <div class="status-bar">
+            <span>9:41</span>
+            <div class="status-right">
+              <i class="ti ti-signal-4g" aria-hidden="true"></i>
+              <i class="ti ti-wifi" aria-hidden="true"></i>
+              <span class="battery"><span class="cell"><span class="fill"></span></span></span>
+            </div>
+          </div>
+
+          <div class="top-section">
+            <div class="nav-row">
+              <button class="icon-btn" aria-label="Voltar"><i class="ti ti-arrow-left" aria-hidden="true"></i></button>
+              <span class="nav-title">Conta da mesa</span>
+              <button class="icon-btn" aria-label="Mais opções"><i class="ti ti-dots" aria-hidden="true"></i></button>
+            </div>
+          </div>
+
+          <div class="scroll">
+
+            <!-- Session info -->
+            <div class="session-card">
+              <div class="avatar">CS</div>
+              <div class="info">
+                Costa do Sol
+                <span class="muted">Hoje · 19:32 — 20:14 · 42 min</span>
+              </div>
+              <span class="pill">Mesa 12</span>
+            </div>
+
+            <!-- Receipt -->
+            <div class="receipt">
+              <div class="receipt-head">
+                <span class="title">Consumo</span>
+                <span class="meta">4 items · pedido #2847</span>
+              </div>
+
+              <div class="receipt-row">
+                <div>
+                  <div class="receipt-name">Matapa com camarão <span class="receipt-qty">× 1</span></div>
+                </div>
+                <div class="receipt-price">450,00 MT</div>
+              </div>
+
+              <div class="receipt-row">
+                <div>
+                  <div class="receipt-name">Frango à zambeziana <span class="receipt-qty">× 2</span></div>
+                  <div class="receipt-mods">Médio · Matapa e arroz</div>
+                </div>
+                <div class="receipt-price">760,00 MT</div>
+              </div>
+
+              <div class="receipt-row">
+                <div>
+                  <div class="receipt-name">Frango à zambeziana <span class="receipt-qty">× 1</span></div>
+                  <div class="receipt-mods">
+                    Médio · Matapa e arroz · <span class="extra">+ Molho extra</span>
+                  </div>
+                  <div class="receipt-mods note">"Por favor bem passado, obrigado."</div>
+                </div>
+                <div class="receipt-price">410,00 MT</div>
+              </div>
+
+              <div class="receipt-row">
+                <div>
+                  <div class="receipt-name">Cerveja 2M <span class="receipt-qty">× 2</span></div>
+                </div>
+                <div class="receipt-price">140,00 MT</div>
+              </div>
+            </div>
+
+            <!-- Summary -->
+            <div class="summary">
+              <div class="sum-row">
+                <span>Subtotal</span>
+                <span class="val">1.760,00 MT</span>
+              </div>
+
+              <div class="sum-row toggle">
+                <div class="label-stack">
+                  <span>Taxa de serviço</span>
+                  <span class="sub">10% · opcional · vai para a equipa</span>
+                </div>
+                <div class="toggle-right">
+                  <span class="val">176,00 MT</span>
+                  <span class="toggle-switch" role="switch" aria-checked="true"></span>
+                </div>
+              </div>
+
+              <div class="sum-row total">
+                <span>Total a pagar</span>
+                <span class="val">1.936,00 MT</span>
+              </div>
+            </div>
+
+            <!-- Payment methods info -->
+            <div class="pay-info">
+              <div class="pay-title">
+                <i class="ti ti-info-circle" aria-hidden="true"></i>
+                Pagamento à mesa após pedido
+              </div>
+              <div class="pay-methods">
+                <span class="pay-chip mpesa"><i class="ti ti-device-mobile" aria-hidden="true"></i>M-Pesa</span>
+                <span class="pay-chip emola"><i class="ti ti-device-mobile" aria-hidden="true"></i>e-Mola</span>
+                <span class="pay-chip"><i class="ti ti-credit-card" aria-hidden="true"></i>Cartão</span>
+                <span class="pay-chip"><i class="ti ti-cash" aria-hidden="true"></i>Dinheiro</span>
+              </div>
+            </div>
+
+          </div>
+
+          <!-- Bottom action bar -->
+          <div class="action-bar">
+            <button class="request-cta">
+              <span class="label"><i class="ti ti-receipt" aria-hidden="true"></i>Pedir a conta</span>
+              <span class="total">1.936,00 MT</span>
+            </button>
+            <button class="split-link">
+              <i class="ti ti-arrows-split-2" aria-hidden="true"></i>
+              Dividir conta entre várias pessoas
+            </button>
+          </div>
+
+          <div class="home-indicator"></div>
+        </div>
+      </div>
+
+      <!-- Pins -->
+      <div class="pins">
+        <div class="pin" style="top: 116px; right: 24px;">1</div>
+        <div class="pin" style="top: 194px; right: 24px;">2</div>
+        <div class="pin" style="top: 380px; left: 24px;">3</div>
+        <div class="pin" style="bottom: 320px; right: 24px;">4</div>
+        <div class="pin" style="bottom: 252px; left: 50%; transform: translateX(-50%);">5</div>
+        <div class="pin" style="bottom: 168px; left: 24px;">6</div>
+        <div class="pin" style="bottom: 95px; left: 50%; transform: translateX(-50%);">7</div>
+        <div class="pin" style="bottom: 40px; left: 50%; transform: translateX(-50%);">8</div>
+      </div>
+    </div>
+  </div>
+
+  <aside class="notes">
+    <h2>Anotações de design</h2>
+    <p class="notes-title">Recibo legível, decisão sem fricção</p>
+    <p class="notes-sub">Apresentação tipo "recibo" — receipt-like — para que o cliente reconheça padrão familiar. Toda a informação para tomar a decisão de pagar sem precisar do empregado.</p>
+
+    <ol class="note-list">
+      <li>
+        <span class="note-num">1</span>
+        <span class="note-body"><strong>Sessão com período visível</strong> — "19:32 — 20:14 · 42 min" dá contexto temporal. Confirma que a conta corresponde a esta refeição (não junta sessões anteriores).</span>
+      </li>
+      <li>
+        <span class="note-num">2</span>
+        <span class="note-body"><strong>Pill da mesa mantém-se</strong> — coerente com toda a stack do customer app.</span>
+      </li>
+      <li>
+        <span class="note-num">3</span>
+        <span class="note-body"><strong>Modificadores e notas visíveis na conta</strong> — extras pagos (+Molho extra) destacados a verde, observação livre em itálico discreto. Cliente pode contestar antes do pagamento.</span>
+      </li>
+      <li>
+        <span class="note-num">4</span>
+        <span class="note-body"><strong>Taxa de serviço como toggle</strong> — 10%, default ON, com micro-copy "vai para a equipa". Em MZ não é universal — dar agência ao cliente reduz desconforto. Toggle off recalcula total imediatamente.</span>
+      </li>
+      <li>
+        <span class="note-num">5</span>
+        <span class="note-body"><strong>Total em escala dramática</strong> — 22px, único número grande no ecrã. Ancora a decisão "vou pagar isto?".</span>
+      </li>
+      <li>
+        <span class="note-num">6</span>
+        <span class="note-body"><strong>Métodos de pagamento visíveis antes</strong> — M-Pesa e e-Mola destacados com cores próximas das marcas (verde-claro e rosa-claro). Em MZ, M-Pesa é dominante; expor cedo evita "ah, não aceitam X" no fim.</span>
+      </li>
+      <li>
+        <span class="note-num">7</span>
+        <span class="note-body"><strong>CTA "Pedir a conta"</strong> — verbo deliberado: ainda não está a pagar, está a sinalizar ao empregado. O fluxo de pagamento real é gerido no Counter (ecrã staff). Total alinhado à direita do CTA.</span>
+      </li>
+      <li>
+        <span class="note-num">8</span>
+        <span class="note-body"><strong>"Dividir conta" como link secundário</strong> — caso muito comum em jantares de grupo. Liga ao ecrã 08. Não compete com a acção principal.</span>
+      </li>
+    </ol>
+
+    <dl class="legend">
+      <dt>Estado mostrado</dt>
+      <dd>4 items servidos · Subtotal 1.760,00 MT · Taxa 10% ON 176,00 MT · <strong>Total 1.936,00 MT</strong></dd>
+      <dt>Estados alternativos</dt>
+      <dd>Taxa OFF (total = subtotal) · Conta dividida (ver ecrã 08) · Conta pedida (estado pós-CTA: "Empregado a caminho") · Pago (selo + recibo arquivado)</dd>
+      <dt>Fluxo seguinte</dt>
+      <dd>Após "Pedir a conta", aparece confirmação ("Empregado a caminho com a sua conta"); o pagamento físico é processado no Counter, este ecrã reflecte o estado em tempo real.</dd>
+    </dl>
+
+    <a class="return" href="../index.html">
+      <i class="ti ti-arrow-left" aria-hidden="true"></i>
+      Voltar ao índice
+    </a>
+  </aside>
+
+</div>
+
+</body>
+</html>
