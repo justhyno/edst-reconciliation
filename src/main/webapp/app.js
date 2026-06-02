@@ -663,7 +663,7 @@ function parseFicheiroProcessed(texto) {
 
       totalRequest++;
       // ID: posição 3 (1-indexed) após "request" → substring(9, 21)
-      const id = lt.substring(9, 21).trim();
+      const id = lt.substring(11, 23).trim();
       regActual = { id, requestLine: lt, responses: [] };
 
     } else if (/^response/i.test(lt) && regActual !== null) {
