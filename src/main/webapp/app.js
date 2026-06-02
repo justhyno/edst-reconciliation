@@ -739,8 +739,8 @@ function tdRespostas(respostas) {
 }
 
 /**
- * Preenche uma das quatro tabelas simples do módulo 2
- * (C parseado, D parseado, só-em-C, só-em-D).
+ * Preenche as tabelas simples do módulo 2: ID + resposta única.
+ * (Transacções com != 1 resposta já foram filtradas antes.)
  */
 function renderTabelaProcessedSimples(tbodyId, countId, registos, labelSufixo) {
   const frag = document.createDocumentFragment();
@@ -748,9 +748,7 @@ function renderTabelaProcessedSimples(tbodyId, countId, registos, labelSufixo) {
   for (const r of registos) {
     const tr = document.createElement('tr');
     tr.appendChild(td(r.id, 'mono'));
-    tr.appendChild(tdTruncado(r.requestLine));
-    tr.appendChild(td(r.responses.length));
-    tr.appendChild(tdRespostas(r.responses));
+    tr.appendChild(tdTruncado(r.responses[0]));
     frag.appendChild(tr);
   }
 
@@ -765,10 +763,8 @@ function renderTabelaMatchesProcessed(matches) {
     const tr = document.createElement('tr');
     tr.className = 'row-match';
     tr.appendChild(td(m.id, 'mono'));
-    tr.appendChild(tdTruncado(m.rC.requestLine));
-    tr.appendChild(td(m.rC.responses.length));
-    tr.appendChild(tdTruncado(m.rD.requestLine));
-    tr.appendChild(td(m.rD.responses.length));
+    tr.appendChild(tdTruncado(m.rC.responses[0]));
+    tr.appendChild(tdTruncado(m.rD.responses[0]));
     frag.appendChild(tr);
   }
 
@@ -781,13 +777,13 @@ function renderTabelaMatchesProcessed(matches) {
 
 function mostrarDebugProcessed(info) {
   const itens = [
-    { label: 'Transacções em C',  valor: info.totalRequestC  },
-    { label: 'Respostas em C',    valor: info.totalResponseC },
-    { label: 'Transacções em D',  valor: info.totalRequestD  },
-    { label: 'Respostas em D',    valor: info.totalResponseD },
-    { label: 'Matches',           valor: info.nMatches       },
-    { label: 'Só em C',           valor: info.nSoC           },
-    { label: 'Só em D',           valor: info.nSoD           }
+    { label: 'Transacções em C',           valor: info.totalRequestC  },
+    { label: 'Excluídas C (>1 resposta)',  valor: info.exclC          },
+    { label: 'Transacções em D',           valor: info.totalRequestD  },
+    { label: 'Excluídas D (>1 resposta)',  valor: info.exclD          },
+    { label: 'Matches',                    valor: info.nMatches       },
+    { label: 'Só em C',                    valor: info.nSoC           },
+    { label: 'Só em D',                    valor: info.nSoD           }
   ];
 
   document.getElementById('debugGridProcessed').innerHTML = itens.map(it =>
@@ -834,38 +830,30 @@ function exportarCSVProcessed(tipo) {
   const BOM = '﻿';
   let linhas = [], nomeFicheiro = '';
 
-  const linhaSimples = r =>
-    [r.id, csvEsc(r.requestLine), r.responses.length, csvEsc(r.responses.join(';'))].join(';');
+  const linhaSimples = r => [r.id, csvEsc(r.responses[0])].join(';');
 
   switch (tipo) {
     case 'C':
       nomeFicheiro = 'processedEDST_ficheiroC.csv';
-      linhas = ['ID;Request;Num_Respostas;Respostas',
-                ...registosC.map(linhaSimples)];
+      linhas = ['ID;Resposta', ...registosC.map(linhaSimples)];
       break;
     case 'D':
       nomeFicheiro = 'processedEDST_ficheiroD.csv';
-      linhas = ['ID;Request;Num_Respostas;Respostas',
-                ...registosD.map(linhaSimples)];
+      linhas = ['ID;Resposta', ...registosD.map(linhaSimples)];
       break;
     case 'matches':
       nomeFicheiro = 'processedEDST_matches.csv';
-      linhas = ['ID;Request_C;Num_Respostas_C;Request_D;Num_Respostas_D',
+      linhas = ['ID;Resposta_C;Resposta_D',
                 ...resultadoRecProcessed.matches.map(m =>
-                  [m.id,
-                   csvEsc(m.rC.requestLine), m.rC.responses.length,
-                   csvEsc(m.rD.requestLine), m.rD.responses.length
-                  ].join(';'))];
+                  [m.id, csvEsc(m.rC.responses[0]), csvEsc(m.rD.responses[0])].join(';'))];
       break;
     case 'soC':
       nomeFicheiro = 'processedEDST_so_em_C.csv';
-      linhas = ['ID;Request;Num_Respostas;Respostas',
-                ...resultadoRecProcessed.soEmC.map(linhaSimples)];
+      linhas = ['ID;Resposta', ...resultadoRecProcessed.soEmC.map(linhaSimples)];
       break;
     case 'soD':
       nomeFicheiro = 'processedEDST_so_em_D.csv';
-      linhas = ['ID;Request;Num_Respostas;Respostas',
-                ...resultadoRecProcessed.soEmD.map(linhaSimples)];
+      linhas = ['ID;Resposta', ...resultadoRecProcessed.soEmD.map(linhaSimples)];
       break;
     default: return;
   }
@@ -913,16 +901,21 @@ async function processarProcessed() {
     const resultC = parseFicheiroProcessed(textoC);
     const resultD = parseFicheiroProcessed(textoD);
 
-    registosC = resultC.registos;
-    registosD = resultD.registos;
+    // Manter apenas transacções com exactamente 1 resposta
+    const exclC = resultC.registos.filter(r => r.responses.length !== 1).length;
+    const exclD = resultD.registos.filter(r => r.responses.length !== 1).length;
+    registosC = resultC.registos.filter(r => r.responses.length === 1);
+    registosD = resultD.registos.filter(r => r.responses.length === 1);
 
     resultadoRecProcessed = reconciliarProcessed(registosC, registosD);
 
     const info = {
       totalRequestC:  resultC.totalRequest,
       totalResponseC: resultC.totalResponse,
+      exclC,
       totalRequestD:  resultD.totalRequest,
       totalResponseD: resultD.totalResponse,
+      exclD,
       nMatches: resultadoRecProcessed.matches.length,
       nSoC:     resultadoRecProcessed.soEmC.length,
       nSoD:     resultadoRecProcessed.soEmD.length
