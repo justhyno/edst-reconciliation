@@ -944,6 +944,11 @@ async function processarProcessed() {
       secao.dataset.tabsInit = '1';
     }
 
+    // Download automático do relatório de reconciliação (3 ficheiros CSV)
+    exportarCSVProcessed('matches');
+    exportarCSVProcessed('soC');
+    exportarCSVProcessed('soD');
+
   } catch (err) {
     console.error('[processarProcessed]', err);
     alert(`Erro ao processar ficheiros C/D:\n${err.message}`);
