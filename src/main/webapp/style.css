@@ -372,6 +372,31 @@ main {
 .tab-btn:hover  { color: var(--azul); }
 .tab-btn.active { color: var(--azul); border-bottom-color: var(--azul); }
 
+/* Tab especial "Transacções" em âmbar */
+.tab-btn--destaque               { color: var(--ambar); }
+.tab-btn--destaque:hover         { color: #b45309; }
+.tab-btn--destaque.active        { color: var(--ambar); border-bottom-color: var(--ambar); }
+
+/* Descrição no topo do tab */
+.tab-desc {
+  font-size: .82rem;
+  color: var(--c500);
+  background: var(--c50);
+  border: 1px solid var(--c200);
+  border-radius: 6px;
+  padding: 10px 14px;
+  margin-bottom: 14px;
+  line-height: 1.6;
+}
+
+.tab-desc code {
+  font-family: var(--mono);
+  background: var(--c200);
+  padding: 1px 5px;
+  border-radius: 3px;
+  font-size: .78rem;
+}
+
 .tab-content         { display: none; padding: 22px 20px; }
 .tab-content.active  { display: block; }
 

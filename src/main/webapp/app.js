@@ -630,6 +630,7 @@ function copiarComando(btn) {
 let registosC = [];
 let registosD = [];
 let resultadoRecProcessed = { matches: [], soEmC: [], soEmD: [] };
+let transaccoesDuplicadas = [];   // secção especial "Transacções"
 
 
 /**
@@ -726,6 +727,74 @@ function agruparPorCampo(registos, campo) {
 }
 
 
+/* -- Secção especial "Transacções" -------------------------- */
+
+/**
+ * Filtra os matches onde:
+ *   - resposta D contém "duplicate" (case-insensitive)
+ *   - resposta C contém "//1"
+ *
+ * Extrai de resposta C:
+ *   - referencia : 14 chars imediatamente antes de "//1"
+ *   - balcao     : 9 chars imediatamente após "CO.CODE:1:1="
+ *
+ * @param {object[]} matches
+ * @returns {object[]}
+ */
+function extrairTransaccoes(matches) {
+  const resultado = [];
+  const MARKER_REF  = '//1';
+  const MARKER_BAL  = 'CO.CODE:1:1=';
+
+  for (const m of matches) {
+    const respD = m.rD.responses[0] || '';
+    const respC = m.rC.responses[0] || '';
+
+    if (!respD.toLowerCase().includes('duplicate')) continue;
+    if (!respC.includes(MARKER_REF))               continue;
+
+    // Referência: 14 chars antes de "//1"
+    const idxRef = respC.indexOf(MARKER_REF);
+    const inicio = Math.max(0, idxRef - 14);
+    const referencia = respC.substring(inicio, idxRef);
+
+    // Balcão: 9 chars após "CO.CODE:1:1="
+    const idxBal = respC.indexOf(MARKER_BAL);
+    const balcao = idxBal !== -1
+      ? respC.substring(idxBal + MARKER_BAL.length, idxBal + MARKER_BAL.length + 9)
+      : '';
+
+    resultado.push({
+      id:        m.id,
+      referencia: referencia.trim(),
+      balcao:    balcao.trim(),
+      respostaC: respC,
+      respostaD: respD
+    });
+  }
+
+  return resultado;
+}
+
+function renderTabelaTransaccoes(lista) {
+  const frag = document.createDocumentFragment();
+
+  for (const r of lista) {
+    const tr = document.createElement('tr');
+    tr.className = 'row-soA';
+    tr.appendChild(td(r.id,        'mono'));
+    tr.appendChild(td(r.referencia, 'mono'));
+    tr.appendChild(td(r.balcao,    'mono'));
+    tr.appendChild(tdTruncado(r.respostaC));
+    tr.appendChild(tdTruncado(r.respostaD));
+    frag.appendChild(tr);
+  }
+
+  preencherTabela('corpoTransaccoes', frag);
+  document.getElementById('countTransaccoes').textContent = `${lista.length} transacções`;
+}
+
+
 /* -- Renderização das tabelas do módulo 2 ------------------- */
 
 /** Cria um <td> com as respostas truncadas e tooltip do texto completo. */
@@ -783,7 +852,8 @@ function mostrarDebugProcessed(info) {
     { label: 'Excluídas D (>1 resposta)',  valor: info.exclD          },
     { label: 'Matches',                    valor: info.nMatches       },
     { label: 'Só em C',                    valor: info.nSoC           },
-    { label: 'Só em D',                    valor: info.nSoD           }
+    { label: 'Só em D',                    valor: info.nSoD           },
+    { label: 'Transacções (duplicate+//1)',valor: info.nTransaccoes   }
   ];
 
   document.getElementById('debugGridProcessed').innerHTML = itens.map(it =>
@@ -854,6 +924,13 @@ function exportarCSVProcessed(tipo) {
     case 'soD':
       nomeFicheiro = 'processedEDST_so_em_D.csv';
       linhas = ['ID;Resposta', ...resultadoRecProcessed.soEmD.map(linhaSimples)];
+      break;
+    case 'transaccoes':
+      nomeFicheiro = 'processedEDST_transaccoes.csv';
+      linhas = ['ID;Referencia;Balcao;Resposta_C;Resposta_D',
+                ...transaccoesDuplicadas.map(r =>
+                  [r.id, csvEsc(r.referencia), csvEsc(r.balcao),
+                   csvEsc(r.respostaC), csvEsc(r.respostaD)].join(';'))];
       break;
     default: return;
   }
@@ -927,6 +1004,11 @@ async function processarProcessed() {
     renderTabelaProcessedSimples('corpoPSoC', 'countPSoC', resultadoRecProcessed.soEmC, 'só em C');
     renderTabelaProcessedSimples('corpoPSoD', 'countPSoD', resultadoRecProcessed.soEmD, 'só em D');
 
+    // Secção especial: matches com "duplicate" em D e "//1" em C
+    transaccoesDuplicadas = extrairTransaccoes(resultadoRecProcessed.matches);
+    renderTabelaTransaccoes(transaccoesDuplicadas);
+    info.nTransaccoes = transaccoesDuplicadas.length;
+
     mostrarDebugProcessed(info);
     mostrarRecCountsProcessed(info);
 
@@ -937,10 +1019,11 @@ async function processarProcessed() {
       secao.dataset.tabsInit = '1';
     }
 
-    // Download automático do relatório de reconciliação (3 ficheiros CSV)
+    // Download automático do relatório de reconciliação
     exportarCSVProcessed('matches');
     exportarCSVProcessed('soC');
     exportarCSVProcessed('soD');
+    exportarCSVProcessed('transaccoes');
 
   } catch (err) {
     console.error('[processarProcessed]', err);

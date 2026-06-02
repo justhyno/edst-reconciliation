@@ -218,6 +218,7 @@
         <button class="tab-btn active" data-tab="tabPC">Ficheiro C Parseado</button>
         <button class="tab-btn" data-tab="tabPD">Ficheiro D Parseado</button>
         <button class="tab-btn" data-tab="tabPRec">Reconciliação</button>
+        <button class="tab-btn tab-btn--destaque" data-tab="tabTransaccoes">Transacções</button>
       </div>
 
       <!-- Tab C -->
@@ -315,6 +316,35 @@
         </div>
 
       </div><!-- /tabPRec -->
+
+      <!-- Tab Transacções — duplicados com referência e balcão -->
+      <div class="tab-content" id="tabTransaccoes">
+        <p class="tab-desc">
+          Matches onde a resposta do Ficheiro D cont&#233;m <code>duplicate</code>
+          e a resposta do Ficheiro C cont&#233;m <code>//1</code>.
+          Extrai a refer&#234;ncia (14 chars antes de <code>//1</code>)
+          e o balc&#227;o (9 chars ap&#243;s <code>CO.CODE:1:1=</code>).
+        </p>
+        <div class="tab-header">
+          <span class="count-badge" id="countTransaccoes">—</span>
+          <button class="btn-export" onclick="exportarCSVProcessed('transaccoes')">Exportar CSV</button>
+        </div>
+        <div class="table-wrapper">
+          <table id="tabelaTransaccoes">
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>Refer&#234;ncia (14 chars)</th>
+                <th>Balc&#227;o (9 chars)</th>
+                <th>Resposta C</th>
+                <th>Resposta D</th>
+              </tr>
+            </thead>
+            <tbody id="corpoTransaccoes"></tbody>
+          </table>
+        </div>
+      </div><!-- /tabTransaccoes -->
+
     </section><!-- /resultadosProcessed -->
 
   </main>
