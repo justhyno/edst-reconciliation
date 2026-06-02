@@ -487,11 +487,16 @@ function escHtml(str) {
    Sistema de tabs
 ============================================================ */
 
-function initTabs() {
-  document.querySelectorAll('.tab-btn').forEach(btn => {
+/**
+ * Inicializa as tabs dentro de um container específico.
+ * Escopo explícito evita que tabs de módulos distintos se interfiram.
+ * @param {HTMLElement} container
+ */
+function initTabs(container) {
+  container.querySelectorAll('.tab-btn').forEach(btn => {
     btn.addEventListener('click', () => {
-      document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-      document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+      container.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+      container.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
       btn.classList.add('active');
       document.getElementById(btn.dataset.tab).classList.add('active');
     });
@@ -618,13 +623,340 @@ function copiarComando(btn) {
 
 
 /* ============================================================
+   MÓDULO 2 — Reconciliação processed.EDST
+============================================================ */
+
+// ── Estado global — módulo 2 ───────────────────────────────
+let registosC = [];
+let registosD = [];
+let resultadoRecProcessed = { matches: [], soEmC: [], soEmD: [] };
+
+
+/**
+ * Parseia um ficheiro processed.EDST.
+ *
+ * Formato: cada transacção começa numa linha com prefixo "request",
+ * seguida de uma ou mais linhas com prefixo "response".
+ *
+ * ID da transacção: 12 caracteres a partir da posição 3 (1-indexed)
+ * após a palavra "request", ou seja:
+ *   linha.substring(9, 21)  em JS 0-indexed
+ *   ("request" = 7 chars; posição 3 após = offset 2 = índice 9)
+ *
+ * @param {string} texto
+ * @returns {{ registos: object[], totalRequest: number, totalResponse: number }}
+ */
+function parseFicheiroProcessed(texto) {
+  const linhas = texto.split(/\r?\n/);
+  const registos = [];
+  let regActual   = null;
+  let totalRequest  = 0;
+  let totalResponse = 0;
+
+  for (const linha of linhas) {
+    const lt = linha.trim();
+    if (!lt) continue;
+
+    if (/^request/i.test(lt)) {
+      // Guardar transacção anterior antes de iniciar nova
+      if (regActual !== null) registos.push(regActual);
+
+      totalRequest++;
+      // ID: posição 3 (1-indexed) após "request" → substring(9, 21)
+      const id = lt.substring(9, 21).trim();
+      regActual = { id, requestLine: lt, responses: [] };
+
+    } else if (/^response/i.test(lt) && regActual !== null) {
+      totalResponse++;
+      regActual.responses.push(lt);
+    }
+  }
+
+  // Guardar a última transacção
+  if (regActual !== null) registos.push(regActual);
+
+  return { registos, totalRequest, totalResponse };
+}
+
+
+/**
+ * Reconcilia dois conjuntos de transacções processed.EDST pelo ID.
+ * @param {object[]} regsC
+ * @param {object[]} regsD
+ * @returns {{ matches: object[], soEmC: object[], soEmD: object[] }}
+ */
+function reconciliarProcessed(regsC, regsD) {
+  const mapaC = agruparPorCampo(regsC, 'id');
+  const mapaD = agruparPorCampo(regsD, 'id');
+
+  const matches = [];
+  const soEmC   = [];
+  const soEmD   = [];
+
+  for (const [id, listaC] of mapaC) {
+    if (mapaD.has(id)) {
+      for (const rC of listaC) {
+        for (const rD of mapaD.get(id)) {
+          matches.push({ id, rC, rD });
+        }
+      }
+    } else {
+      for (const r of listaC) soEmC.push(r);
+    }
+  }
+
+  for (const [id, listaD] of mapaD) {
+    if (!mapaC.has(id)) {
+      for (const r of listaD) soEmD.push(r);
+    }
+  }
+
+  return { matches, soEmC, soEmD };
+}
+
+/** Agrupa registos por um campo arbitrário num Map campo → registos[]. */
+function agruparPorCampo(registos, campo) {
+  const mapa = new Map();
+  for (const r of registos) {
+    const chave = r[campo];
+    if (!mapa.has(chave)) mapa.set(chave, []);
+    mapa.get(chave).push(r);
+  }
+  return mapa;
+}
+
+
+/* -- Renderização das tabelas do módulo 2 ------------------- */
+
+/** Cria um <td> com as respostas truncadas e tooltip do texto completo. */
+function tdRespostas(respostas) {
+  const el   = document.createElement('td');
+  el.className = 'mono';
+  const texto  = respostas.join(' | ');
+  el.title     = texto;
+  el.textContent = texto.length > 60 ? texto.substring(0, 60) + '…' : texto;
+  return el;
+}
+
+/**
+ * Preenche uma das quatro tabelas simples do módulo 2
+ * (C parseado, D parseado, só-em-C, só-em-D).
+ */
+function renderTabelaProcessedSimples(tbodyId, countId, registos, labelSufixo) {
+  const frag = document.createDocumentFragment();
+
+  for (const r of registos) {
+    const tr = document.createElement('tr');
+    tr.appendChild(td(r.id, 'mono'));
+    tr.appendChild(tdTruncado(r.requestLine));
+    tr.appendChild(td(r.responses.length));
+    tr.appendChild(tdRespostas(r.responses));
+    frag.appendChild(tr);
+  }
+
+  preencherTabela(tbodyId, frag);
+  document.getElementById(countId).textContent = `${registos.length} ${labelSufixo}`;
+}
+
+function renderTabelaMatchesProcessed(matches) {
+  const frag = document.createDocumentFragment();
+
+  for (const m of matches) {
+    const tr = document.createElement('tr');
+    tr.className = 'row-match';
+    tr.appendChild(td(m.id, 'mono'));
+    tr.appendChild(tdTruncado(m.rC.requestLine));
+    tr.appendChild(td(m.rC.responses.length));
+    tr.appendChild(tdTruncado(m.rD.requestLine));
+    tr.appendChild(td(m.rD.responses.length));
+    frag.appendChild(tr);
+  }
+
+  preencherTabela('corpoPMatches', frag);
+  document.getElementById('countPMatches').textContent = `${matches.length} matches`;
+}
+
+
+/* -- Diagnóstico do módulo 2 -------------------------------- */
+
+function mostrarDebugProcessed(info) {
+  const itens = [
+    { label: 'Transacções em C',  valor: info.totalRequestC  },
+    { label: 'Respostas em C',    valor: info.totalResponseC },
+    { label: 'Transacções em D',  valor: info.totalRequestD  },
+    { label: 'Respostas em D',    valor: info.totalResponseD },
+    { label: 'Matches',           valor: info.nMatches       },
+    { label: 'Só em C',           valor: info.nSoC           },
+    { label: 'Só em D',           valor: info.nSoD           }
+  ];
+
+  document.getElementById('debugGridProcessed').innerHTML = itens.map(it =>
+    `<div class="debug-item">
+       <span class="debug-label">${it.label}</span>
+       <span class="debug-value">${it.valor ?? '—'}</span>
+     </div>`
+  ).join('');
+
+  document.getElementById('debugPanelProcessed').hidden = false;
+}
+
+function mostrarRecCountsProcessed(info) {
+  document.getElementById('recCountsProcessed').innerHTML =
+    `<div class="rec-stat">
+       <span class="rec-stat-label">Matches</span>
+       <span class="rec-stat-value v-match">${info.nMatches}</span>
+     </div>
+     <div class="rec-stat">
+       <span class="rec-stat-label">Só em C</span>
+       <span class="rec-stat-value v-soA">${info.nSoC}</span>
+     </div>
+     <div class="rec-stat">
+       <span class="rec-stat-label">Só em D</span>
+       <span class="rec-stat-value v-soB">${info.nSoD}</span>
+     </div>`;
+}
+
+
+/* -- Exportar CSV do módulo 2 ------------------------------- */
+
+/** Escapa um valor para CSV (separador ";"). */
+function csvEsc(val) {
+  const s = String(val ?? '');
+  return (s.includes(';') || s.includes('"') || s.includes('\n'))
+    ? `"${s.replace(/"/g, '""')}"` : s;
+}
+
+/**
+ * Gera e faz download do CSV do módulo 2.
+ * @param {'C'|'D'|'matches'|'soC'|'soD'} tipo
+ */
+function exportarCSVProcessed(tipo) {
+  const BOM = '﻿';
+  let linhas = [], nomeFicheiro = '';
+
+  const linhaSimples = r =>
+    [r.id, csvEsc(r.requestLine), r.responses.length, csvEsc(r.responses.join(' | '))].join(';');
+
+  switch (tipo) {
+    case 'C':
+      nomeFicheiro = 'processedEDST_ficheiroC.csv';
+      linhas = ['ID;Request;Num_Respostas;Respostas',
+                ...registosC.map(linhaSimples)];
+      break;
+    case 'D':
+      nomeFicheiro = 'processedEDST_ficheiroD.csv';
+      linhas = ['ID;Request;Num_Respostas;Respostas',
+                ...registosD.map(linhaSimples)];
+      break;
+    case 'matches':
+      nomeFicheiro = 'processedEDST_matches.csv';
+      linhas = ['ID;Request_C;Num_Respostas_C;Request_D;Num_Respostas_D',
+                ...resultadoRecProcessed.matches.map(m =>
+                  [m.id,
+                   csvEsc(m.rC.requestLine), m.rC.responses.length,
+                   csvEsc(m.rD.requestLine), m.rD.responses.length
+                  ].join(';'))];
+      break;
+    case 'soC':
+      nomeFicheiro = 'processedEDST_so_em_C.csv';
+      linhas = ['ID;Request;Num_Respostas;Respostas',
+                ...resultadoRecProcessed.soEmC.map(linhaSimples)];
+      break;
+    case 'soD':
+      nomeFicheiro = 'processedEDST_so_em_D.csv';
+      linhas = ['ID;Request;Num_Respostas;Respostas',
+                ...resultadoRecProcessed.soEmD.map(linhaSimples)];
+      break;
+    default: return;
+  }
+
+  const blob = new Blob([BOM + linhas.join('\r\n')], { type: 'text/csv;charset=utf-8;' });
+  const url  = URL.createObjectURL(blob);
+  const a    = document.createElement('a');
+  a.href = url; a.download = nomeFicheiro; a.click();
+  URL.revokeObjectURL(url);
+}
+
+
+/* -- Handler principal do módulo 2 -------------------------- */
+
+async function processarProcessed() {
+  const fileC       = document.getElementById('ficheiroC').files[0];
+  const fileD       = document.getElementById('ficheiroD').files[0];
+  const usarWin1252 = document.getElementById('chkEncoding').checked;
+
+  if (!fileC || !fileD) {
+    alert('Selecione ambos os ficheiros (C e D) antes de processar.');
+    return;
+  }
+
+  const btn = document.getElementById('btnProcessarProcessed');
+  btn.disabled    = true;
+  btn.textContent = 'A processar…';
+
+  try {
+    const encoding = usarWin1252 ? 'windows-1252' : 'utf-8';
+
+    const [textoC, textoD] = await Promise.all([
+      lerFicheiro(fileC, encoding),
+      lerFicheiro(fileD, encoding)
+    ]);
+
+    const resultC = parseFicheiroProcessed(textoC);
+    const resultD = parseFicheiroProcessed(textoD);
+
+    registosC = resultC.registos;
+    registosD = resultD.registos;
+
+    resultadoRecProcessed = reconciliarProcessed(registosC, registosD);
+
+    const info = {
+      totalRequestC:  resultC.totalRequest,
+      totalResponseC: resultC.totalResponse,
+      totalRequestD:  resultD.totalRequest,
+      totalResponseD: resultD.totalResponse,
+      nMatches: resultadoRecProcessed.matches.length,
+      nSoC:     resultadoRecProcessed.soEmC.length,
+      nSoD:     resultadoRecProcessed.soEmD.length
+    };
+
+    renderTabelaProcessedSimples('corpoPC',   'countPC',   registosC,                   'transacções');
+    renderTabelaProcessedSimples('corpoPD',   'countPD',   registosD,                   'transacções');
+    renderTabelaMatchesProcessed(resultadoRecProcessed.matches);
+    renderTabelaProcessedSimples('corpoPSoC', 'countPSoC', resultadoRecProcessed.soEmC, 'só em C');
+    renderTabelaProcessedSimples('corpoPSoD', 'countPSoD', resultadoRecProcessed.soEmD, 'só em D');
+
+    mostrarDebugProcessed(info);
+    mostrarRecCountsProcessed(info);
+
+    const secao = document.getElementById('resultadosProcessed');
+    secao.hidden = false;
+    // Inicializar tabs do módulo 2 na primeira vez que são reveladas
+    if (!secao.dataset.tabsInit) {
+      initTabs(secao);
+      secao.dataset.tabsInit = '1';
+    }
+
+  } catch (err) {
+    console.error(err);
+    alert(`Erro ao processar: ${err.message}`);
+  } finally {
+    btn.disabled    = false;
+    btn.textContent = 'Processar e Reconciliar';
+  }
+}
+
+
+/* ============================================================
    Inicialização
 ============================================================ */
 
 document.addEventListener('DOMContentLoaded', () => {
-  initTabs();
+  // Tabs do módulo 1 são inicializadas aqui; módulo 2 é lazy (ver processarProcessed)
+  initTabs(document.getElementById('resultados'));
 
   document.getElementById('btnProcessar').addEventListener('click', processar);
+  document.getElementById('btnProcessarProcessed').addEventListener('click', processarProcessed);
 
   // Mostrar nome e tamanho do ficheiro selecionado
   function bindFileInfo(inputId, infoId) {
@@ -641,4 +973,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
   bindFileInfo('ficheiroA', 'infoA');
   bindFileInfo('ficheiroB', 'infoB');
+  bindFileInfo('ficheiroC', 'infoC');
+  bindFileInfo('ficheiroD', 'infoD');
 });

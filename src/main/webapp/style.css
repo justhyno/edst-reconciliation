@@ -217,6 +217,38 @@ main {
 .btn-primary:hover    { background: var(--azul-hover); }
 .btn-primary:disabled { opacity: .55; cursor: not-allowed; }
 
+.btn-verde            { background: var(--verde); }
+.btn-verde:hover      { background: #15803d; }
+
+/* ── Separador entre módulos ── */
+.modulo-separador {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin: 36px 0 20px;
+  color: var(--c500);
+  font-size: .78rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .08em;
+}
+
+.modulo-separador::before,
+.modulo-separador::after {
+  content: '';
+  flex: 1;
+  height: 2px;
+  background: var(--c200);
+}
+
+.modulo-separador span {
+  white-space: nowrap;
+  padding: 4px 12px;
+  background: var(--c100);
+  border: 1px solid var(--c200);
+  border-radius: 20px;
+}
+
 .btn-export {
   background: var(--c100);
   color: var(--c700);

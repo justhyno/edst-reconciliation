@@ -182,6 +182,151 @@
       </div><!-- /tabRec -->
     </section><!-- /resultados -->
 
+    <!-- ════════════════════════════════════════════════════════
+         MÓDULO 2 — Reconciliação processed.EDST
+    ════════════════════════════════════════════════════════ -->
+    <div class="modulo-separador">
+      <span>Reconciliação processed.EDST</span>
+    </div>
+
+    <section class="inputs-section">
+      <div class="input-card">
+        <label for="ficheiroC">Ficheiro C — processed.EDST</label>
+        <input type="file" id="ficheiroC" accept=".txt,.dat,.log,*">
+        <span class="file-info" id="infoC">Nenhum ficheiro selecionado</span>
+      </div>
+      <div class="input-card">
+        <label for="ficheiroD">Ficheiro D — processed.EDST</label>
+        <input type="file" id="ficheiroD" accept=".txt,.dat,.log,*">
+        <span class="file-info" id="infoD">Nenhum ficheiro selecionado</span>
+      </div>
+    </section>
+
+    <div class="options-bar">
+      <button id="btnProcessarProcessed" class="btn-primary btn-verde">Processar e Reconciliar</button>
+    </div>
+
+    <!-- Diagnóstico do módulo 2 -->
+    <section class="debug-panel" id="debugPanelProcessed" hidden>
+      <h3>Diagnóstico</h3>
+      <div class="debug-grid" id="debugGridProcessed"></div>
+    </section>
+
+    <!-- Resultados do módulo 2 -->
+    <section class="resultados" id="resultadosProcessed" hidden>
+      <div class="tabs">
+        <button class="tab-btn active" data-tab="tabPC">Ficheiro C Parseado</button>
+        <button class="tab-btn" data-tab="tabPD">Ficheiro D Parseado</button>
+        <button class="tab-btn" data-tab="tabPRec">Reconciliação</button>
+      </div>
+
+      <!-- Tab C -->
+      <div class="tab-content active" id="tabPC">
+        <div class="tab-header">
+          <span class="count-badge" id="countPC">—</span>
+          <button class="btn-export" onclick="exportarCSVProcessed('C')">Exportar CSV</button>
+        </div>
+        <div class="table-wrapper">
+          <table>
+            <thead>
+              <tr>
+                <th>ID (12 chars)</th>
+                <th>Linha Request</th>
+                <th>N&#186; Respostas</th>
+                <th>Respostas</th>
+              </tr>
+            </thead>
+            <tbody id="corpoPC"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Tab D -->
+      <div class="tab-content" id="tabPD">
+        <div class="tab-header">
+          <span class="count-badge" id="countPD">—</span>
+          <button class="btn-export" onclick="exportarCSVProcessed('D')">Exportar CSV</button>
+        </div>
+        <div class="table-wrapper">
+          <table>
+            <thead>
+              <tr>
+                <th>ID (12 chars)</th>
+                <th>Linha Request</th>
+                <th>N&#186; Respostas</th>
+                <th>Respostas</th>
+              </tr>
+            </thead>
+            <tbody id="corpoPD"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Tab Reconciliação Processed -->
+      <div class="tab-content" id="tabPRec">
+        <div class="rec-counts" id="recCountsProcessed"></div>
+
+        <h4 class="rec-section-title match">&#10003; Matches &#8212; presentes em C e em D</h4>
+        <div class="tab-header">
+          <span class="count-badge match" id="countPMatches">—</span>
+          <button class="btn-export" onclick="exportarCSVProcessed('matches')">Exportar CSV</button>
+        </div>
+        <div class="table-wrapper">
+          <table>
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>Request C</th>
+                <th>N&#186; Resp. C</th>
+                <th>Request D</th>
+                <th>N&#186; Resp. D</th>
+              </tr>
+            </thead>
+            <tbody id="corpoPMatches"></tbody>
+          </table>
+        </div>
+
+        <h4 class="rec-section-title soA">&#8594; S&#243; em C</h4>
+        <div class="tab-header">
+          <span class="count-badge soA" id="countPSoC">—</span>
+          <button class="btn-export" onclick="exportarCSVProcessed('soC')">Exportar CSV</button>
+        </div>
+        <div class="table-wrapper">
+          <table>
+            <thead>
+              <tr>
+                <th>ID (12 chars)</th>
+                <th>Linha Request</th>
+                <th>N&#186; Respostas</th>
+                <th>Respostas</th>
+              </tr>
+            </thead>
+            <tbody id="corpoPSoC"></tbody>
+          </table>
+        </div>
+
+        <h4 class="rec-section-title soB">&#8594; S&#243; em D</h4>
+        <div class="tab-header">
+          <span class="count-badge soB" id="countPSoD">—</span>
+          <button class="btn-export" onclick="exportarCSVProcessed('soD')">Exportar CSV</button>
+        </div>
+        <div class="table-wrapper">
+          <table>
+            <thead>
+              <tr>
+                <th>ID (12 chars)</th>
+                <th>Linha Request</th>
+                <th>N&#186; Respostas</th>
+                <th>Respostas</th>
+              </tr>
+            </thead>
+            <tbody id="corpoPSoD"></tbody>
+          </table>
+        </div>
+
+      </div><!-- /tabPRec -->
+    </section><!-- /resultadosProcessed -->
+
   </main>
 
   <script src="app.js"></script>
