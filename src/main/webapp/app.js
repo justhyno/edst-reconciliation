@@ -881,21 +881,29 @@ function exportarCSVProcessed(tipo) {
 /* -- Handler principal do módulo 2 -------------------------- */
 
 async function processarProcessed() {
-  const fileC       = document.getElementById('ficheiroC').files[0];
-  const fileD       = document.getElementById('ficheiroD').files[0];
-  const usarWin1252 = document.getElementById('chkEncoding').checked;
-
-  if (!fileC || !fileD) {
-    alert('Selecione ambos os ficheiros (C e D) antes de processar.');
-    return;
-  }
-
   const btn = document.getElementById('btnProcessarProcessed');
-  btn.disabled    = true;
-  btn.textContent = 'A processar…';
 
   try {
-    const encoding = usarWin1252 ? 'windows-1252' : 'utf-8';
+    const inputC = document.getElementById('ficheiroC');
+    const inputD = document.getElementById('ficheiroD');
+
+    if (!inputC || !inputD) {
+      throw new Error('Elementos de input não encontrados — tente recarregar a página (Ctrl+Shift+R).');
+    }
+
+    const fileC = inputC.files[0];
+    const fileD = inputD.files[0];
+
+    if (!fileC || !fileD) {
+      alert('Selecione ambos os ficheiros (C e D) antes de processar.');
+      return;
+    }
+
+    btn.disabled    = true;
+    btn.textContent = 'A processar…';
+
+    const usarWin1252 = document.getElementById('chkEncoding').checked;
+    const encoding    = usarWin1252 ? 'windows-1252' : 'utf-8';
 
     const [textoC, textoD] = await Promise.all([
       lerFicheiro(fileC, encoding),
@@ -931,18 +939,19 @@ async function processarProcessed() {
 
     const secao = document.getElementById('resultadosProcessed');
     secao.hidden = false;
-    // Inicializar tabs do módulo 2 na primeira vez que são reveladas
     if (!secao.dataset.tabsInit) {
       initTabs(secao);
       secao.dataset.tabsInit = '1';
     }
 
   } catch (err) {
-    console.error(err);
-    alert(`Erro ao processar: ${err.message}`);
+    console.error('[processarProcessed]', err);
+    alert(`Erro ao processar ficheiros C/D:\n${err.message}`);
   } finally {
-    btn.disabled    = false;
-    btn.textContent = 'Processar e Reconciliar';
+    if (btn) {
+      btn.disabled    = false;
+      btn.textContent = 'Processar e Reconciliar';
+    }
   }
 }
 
