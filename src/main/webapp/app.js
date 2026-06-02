@@ -730,11 +730,11 @@ function agruparPorCampo(registos, campo) {
 
 /** Cria um <td> com as respostas truncadas e tooltip do texto completo. */
 function tdRespostas(respostas) {
-  const el   = document.createElement('td');
+  const el    = document.createElement('td');
   el.className = 'mono';
-  const texto  = respostas.join(' | ');
-  el.title     = texto;
-  el.textContent = texto.length > 60 ? texto.substring(0, 60) + '…' : texto;
+  const texto  = respostas.join(';');
+  el.title     = texto;                            // tooltip mostra tudo
+  el.textContent = texto.length > 120 ? texto.substring(0, 120) + '…' : texto;
   return el;
 }
 
@@ -835,7 +835,7 @@ function exportarCSVProcessed(tipo) {
   let linhas = [], nomeFicheiro = '';
 
   const linhaSimples = r =>
-    [r.id, csvEsc(r.requestLine), r.responses.length, csvEsc(r.responses.join(' | '))].join(';');
+    [r.id, csvEsc(r.requestLine), r.responses.length, csvEsc(r.responses.join(';'))].join(';');
 
   switch (tipo) {
     case 'C':
