@@ -17,22 +17,52 @@ let avisos = [];             // mensagens de aviso acumuladas
 
 
 /* ============================================================
-   Leitura assíncrona de ficheiro
+   Leitura em chunks — suporta ficheiros de qualquer tamanho
 ============================================================ */
 
+const CHUNK_SIZE = 8 * 1024 * 1024; // 8 MB por chunk
+
 /**
- * Lê um File como texto com o encoding indicado.
- * @param {File} file
- * @param {string} encoding  'utf-8' ou 'windows-1252'
- * @returns {Promise<string>}
+ * Lê um File em chunks de 8 MB e chama onLinha para cada linha de texto.
+ * Nunca carrega o ficheiro inteiro em memória — ideal para ficheiros > 100 MB.
+ *
+ * @param {File}     file
+ * @param {string}   encoding    'utf-8' | 'windows-1252'
+ * @param {function} onLinha     Chamado com cada linha (string)
+ * @param {function} [onProgress] Chamado com percentagem (0-100)
  */
-function lerFicheiro(file, encoding) {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload  = e => resolve(e.target.result);
-    reader.onerror = () => reject(new Error(`Erro ao ler "${file.name}"`));
-    reader.readAsText(file, encoding);
-  });
+async function lerEmLinhas(file, encoding, onLinha, onProgress) {
+  const dec  = new TextDecoder(encoding);
+  let resto  = '';
+
+  for (let offset = 0; offset < file.size; offset += CHUNK_SIZE) {
+    const fim  = Math.min(offset + CHUNK_SIZE, file.size);
+    const blob = file.slice(offset, fim);
+
+    const buf = await new Promise((res, rej) => {
+      const fr = new FileReader();
+      fr.onload  = e => res(e.target.result);
+      fr.onerror = () => rej(new Error(`Erro ao ler "${file.name}"`));
+      fr.readAsArrayBuffer(blob);
+    });
+
+    const ultimo = fim >= file.size;
+    // stream:true mantém o estado do decoder entre chunks (necessário para
+    // caracteres multi-byte que podem ser divididos entre chunks)
+    const texto  = dec.decode(buf, { stream: !ultimo });
+    const linhas = (resto + texto).split(/\r?\n/);
+
+    // A última "linha" pode estar incompleta — guardar para o próximo chunk
+    resto = ultimo ? '' : linhas.pop();
+
+    for (const l of linhas) onLinha(l);
+    if (ultimo && resto)    onLinha(resto);  // flush da última linha
+
+    if (onProgress) onProgress(Math.round(fim / file.size * 100));
+
+    // Ceder controlo à UI entre chunks para não bloquear o browser
+    await new Promise(r => setTimeout(r, 0));
+  }
 }
 
 
@@ -53,66 +83,49 @@ function extrairValorLinha(linha) {
 }
 
 /**
- * Parseia o conteúdo do Ficheiro B (ATM MESSAGE LOG).
+ * Parseia o Ficheiro B (ATM MESSAGE LOG) em streaming — suporta ficheiros > 1 GB.
  *
- * Formato esperado: blocos de linhas começando em "id: …|"
- * seguidos de campos "1: …|" a "9: …|".
- *
- * Filtro aplicado: apenas registos com campo 6 a começar por "ACLK".
- *
- * @param {string} texto  Conteúdo completo do ficheiro
- * @returns {{ registos: object[], totalBrutos: number, totalAclk: number }}
+ * @param {File}     file
+ * @param {string}   encoding
+ * @param {function} onProgress  Callback com percentagem (0-100)
+ * @returns {Promise<{ registos, totalBrutos, totalAclk }>}
  */
-function parseFicheiroB(texto) {
-  const linhas = texto.split(/\r?\n/);
+async function parseFicheiroB(file, encoding, onProgress) {
   const todos = [];
   let regActual = null;
 
-  for (const linha of linhas) {
+  await lerEmLinhas(file, encoding, linha => {
     const lt = linha.trim();
-    if (!lt) continue;                              // linha em branco — ignorar
+    if (!lt) return;
 
     if (/^id:/i.test(lt)) {
-      // Guardar registo anterior antes de começar o próximo
       if (regActual !== null) todos.push(regActual);
-
-      // Iniciar novo registo
       const idCompleto = extrairValorLinha(lt);
-      const partes = idCompleto.split('.');         // RRN.CARD.DHMSG
+      const partes     = idCompleto.split('.');
       regActual = {
-        id:       idCompleto,
-        RRN:      partes[0] || '',
-        CARD:     partes[1] || '',
-        DHMSG:    partes[2] || '',
+        id:      idCompleto,
+        RRN:     partes[0] || '',
+        CARD:    partes[1] || '',
+        DHMSG:   partes[2] || '',
         campo_1: '', campo_2: '', campo_3: '',
         campo_4: '', campo_5: '', campo_6: '',
         campo_7: '', campo_8: '', campo_9: ''
       };
-
     } else if (regActual !== null) {
-      // Tentar capturar "N: valor|"
       const m = lt.match(/^(\d+):\s*(.*?)(?:\|)?$/);
       if (m) {
         const n = parseInt(m[1], 10);
         if (n >= 1 && n <= 9) {
-          // Remover "|" residual do valor
           regActual[`campo_${n}`] = m[2].replace(/\|$/, '').trim();
         }
       }
     }
-  }
+  }, onProgress);
 
-  // Guardar o último registo (não seguido de outro "id:")
   if (regActual !== null) todos.push(regActual);
 
-  // Filtrar: manter apenas campo_6 com prefixo "ACLK"
   const filtrados = todos.filter(r => r.campo_6.startsWith('ACLK'));
-
-  return {
-    registos:    filtrados,
-    totalBrutos: todos.length,
-    totalAclk:   filtrados.length
-  };
+  return { registos: filtrados, totalBrutos: todos.length, totalAclk: filtrados.length };
 }
 
 
@@ -121,52 +134,39 @@ function parseFicheiroB(texto) {
 ============================================================ */
 
 /**
- * Parseia o conteúdo do Ficheiro A (EDST, formato fixed-width).
+ * Parseia o Ficheiro A (EDST, fixed-width) em streaming.
  *
- * Filtros (posições 1-indexed):
- *   - posição 1 === '1'
- *   - posição 7 === '6'
- *
- * Extracção:
- *   - RRN: posições 296–307 (substring(295, 307) em JS 0-indexed)
- *
- * Linhas com menos de 307 caracteres são descartadas silenciosamente.
- *
- * @param {string} texto  Conteúdo completo do ficheiro
- * @returns {{ registos: object[], totalLinhas: number, passaramFiltro: number, descartadasCurtas: number }}
+ * @param {File}     file
+ * @param {string}   encoding
+ * @param {function} onProgress
+ * @returns {Promise<{ registos, totalLinhas, passaramFiltro, descartadasCurtas }>}
  */
-function parseFicheiroA(texto) {
-  const linhas = texto.split(/\r?\n/);
+async function parseFicheiroA(file, encoding, onProgress) {
   const registos        = [];
   let totalLinhas       = 0;
   let passaramFiltro    = 0;
   let descartadasCurtas = 0;
+  let numLinha          = 0;
 
-  for (let i = 0; i < linhas.length; i++) {
-    const linha = linhas[i];
-
-    // Ignorar linhas completamente vazias sem contar
-    if (linha === '') continue;
+  await lerEmLinhas(file, encoding, linha => {
+    numLinha++;
+    if (linha === '') return;
     totalLinhas++;
 
-    // Filtro de posições (1-indexed → 0-indexed: pos1=linha[0], pos7=linha[6])
-    if (linha[0] !== '1' || linha[6] !== '6') continue;
+    if (linha[0] !== '1' || linha[6] !== '6') return;
 
-    // Verificar comprimento mínimo para extrair RRN
     if (linha.length < 352) {
       descartadasCurtas++;
-      continue;
+      return;
     }
 
     passaramFiltro++;
-    const rrn = linha.substring(339, 351).trim();   // posições 340–352 (1-indexed)
-
     registos.push({
-      numLinha:      i + 1,   // número de linha no ficheiro original
-      RRN:           rrn,
+      numLinha,
+      RRN:           linha.substring(339, 351).trim(),
       linhaCompleta: linha
     });
-  }
+  }, onProgress);
 
   return { registos, totalLinhas, passaramFiltro, descartadasCurtas };
 }
@@ -505,6 +505,23 @@ function initTabs(container) {
 
 
 /* ============================================================
+   Progresso
+============================================================ */
+
+function mostrarProgresso(label, pct) {
+  const area = document.getElementById('progressArea');
+  area.hidden = false;
+  document.getElementById('progressLabel').textContent = label;
+  document.getElementById('progressFill').style.width  = pct + '%';
+  document.getElementById('progressPct').textContent   = pct + '%';
+}
+
+function ocultarProgresso() {
+  document.getElementById('progressArea').hidden = true;
+}
+
+
+/* ============================================================
    Handler principal — Processar e Reconciliar
 ============================================================ */
 
@@ -520,32 +537,30 @@ async function processar() {
     return;
   }
 
-  // Aviso para ficheiros grandes (> 50 MB)
-  const limite = 50 * 1024 * 1024;
-  if (fileA.size > limite) adicionarAviso(`Ficheiro A tem ${(fileA.size / 1024 / 1024).toFixed(1)} MB — o processamento pode ser lento.`);
-  if (fileB.size > limite) adicionarAviso(`Ficheiro B tem ${(fileB.size / 1024 / 1024).toFixed(1)} MB — o processamento pode ser lento.`);
-
   const btn = document.getElementById('btnProcessar');
   btn.disabled    = true;
   btn.textContent = 'A processar…';
 
   try {
     const encoding = usarWin1252 ? 'windows-1252' : 'utf-8';
+    const mbB = (fileB.size / 1024 / 1024).toFixed(0);
+    if (fileB.size > 50 * 1024 * 1024) {
+      adicionarAviso(`Ficheiro B tem ${mbB} MB — leitura em chunks de 8 MB.`);
+    }
 
-    // Ler ambos os ficheiros em paralelo
-    const [textoA, textoB] = await Promise.all([
-      lerFicheiro(fileA, encoding),
-      lerFicheiro(fileB, encoding)
-    ]);
+    // Processar sequencialmente para minimizar memória em uso simultâneo
+    mostrarProgresso(`A ler Ficheiro A — ${fileA.name}`, 0);
+    const resultA = await parseFicheiroA(fileA, encoding,
+      pct => mostrarProgresso(`A ler Ficheiro A — ${fileA.name}`, pct));
 
-    // Parsear
-    const resultA = parseFicheiroA(textoA);
-    const resultB = parseFicheiroB(textoB);
+    mostrarProgresso(`A ler Ficheiro B — ${fileB.name} (${mbB} MB)`, 0);
+    const resultB = await parseFicheiroB(fileB, encoding,
+      pct => mostrarProgresso(`A ler Ficheiro B — ${fileB.name} (${mbB} MB)`, pct));
+
+    ocultarProgresso();
 
     registosA = resultA.registos;
     registosB = resultB.registos;
-
-    // Reconciliar
     resultadoRec = reconciliar(registosA, registosB);
 
     const info = {
@@ -559,7 +574,6 @@ async function processar() {
       nSoB:              resultadoRec.soEmB.length
     };
 
-    // Renderizar todas as tabelas
     renderTabelaB(registosB);
     renderTabelaA(registosA, resultA.descartadasCurtas);
     renderTabelaMatches(resultadoRec.matches);
@@ -573,10 +587,12 @@ async function processar() {
     document.getElementById('resultados').hidden = false;
 
   } catch (err) {
+    ocultarProgresso();
     adicionarAviso(`Erro durante o processamento: ${err.message}`);
     mostrarAvisos();
     console.error(err);
   } finally {
+    ocultarProgresso();
     btn.disabled    = false;
     btn.textContent = 'Processar e Reconciliar';
   }
@@ -647,33 +663,27 @@ let transaccoesDuplicadas = [];   // secção especial "Transacções"
  * @param {string} texto
  * @returns {{ registos: object[], totalRequest: number, totalResponse: number }}
  */
-function parseFicheiroProcessed(texto) {
-  const linhas = texto.split(/\r?\n/);
-  const registos = [];
+async function parseFicheiroProcessed(file, encoding, onProgress) {
+  const registos  = [];
   let regActual   = null;
   let totalRequest  = 0;
   let totalResponse = 0;
 
-  for (const linha of linhas) {
+  await lerEmLinhas(file, encoding, linha => {
     const lt = linha.trim();
-    if (!lt) continue;
+    if (!lt) return;
 
     if (/^request/i.test(lt)) {
-      // Guardar transacção anterior antes de iniciar nova
       if (regActual !== null) registos.push(regActual);
-
       totalRequest++;
-      // ID: posição 3 (1-indexed) após "request" → substring(9, 21)
       const id = lt.substring(11, 23).trim();
       regActual = { id, requestLine: lt, responses: [] };
-
     } else if (/^response/i.test(lt) && regActual !== null) {
       totalResponse++;
       regActual.responses.push(lt);
     }
-  }
+  }, onProgress);
 
-  // Guardar a última transacção
   if (regActual !== null) registos.push(regActual);
 
   return { registos, totalRequest, totalResponse };
@@ -970,13 +980,15 @@ async function processarProcessed() {
     const usarWin1252 = document.getElementById('chkEncoding').checked;
     const encoding    = usarWin1252 ? 'windows-1252' : 'utf-8';
 
-    const [textoC, textoD] = await Promise.all([
-      lerFicheiro(fileC, encoding),
-      lerFicheiro(fileD, encoding)
-    ]);
+    mostrarProgresso(`A ler Ficheiro C — ${fileC.name}`, 0);
+    const resultC = await parseFicheiroProcessed(fileC, encoding,
+      pct => mostrarProgresso(`A ler Ficheiro C — ${fileC.name}`, pct));
 
-    const resultC = parseFicheiroProcessed(textoC);
-    const resultD = parseFicheiroProcessed(textoD);
+    mostrarProgresso(`A ler Ficheiro D — ${fileD.name}`, 0);
+    const resultD = await parseFicheiroProcessed(fileD, encoding,
+      pct => mostrarProgresso(`A ler Ficheiro D — ${fileD.name}`, pct));
+
+    ocultarProgresso();
 
     // Manter apenas transacções com exactamente 1 resposta
     const exclC = resultC.registos.filter(r => r.responses.length !== 1).length;
@@ -1026,6 +1038,7 @@ async function processarProcessed() {
     exportarCSVProcessed('transaccoes');
 
   } catch (err) {
+    ocultarProgresso();
     console.error('[processarProcessed]', err);
     alert(`Erro ao processar ficheiros C/D:\n${err.message}`);
   } finally {

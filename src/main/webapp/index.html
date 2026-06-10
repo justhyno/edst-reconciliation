@@ -47,6 +47,15 @@
       <button id="btnProcessar" class="btn-primary">Processar e Reconciliar</button>
     </div>
 
+    <!-- ── Barra de progresso (partilhada entre módulos) ── -->
+    <div class="progress-area" id="progressArea" hidden>
+      <span class="progress-label" id="progressLabel">A ler…</span>
+      <div class="progress-track">
+        <div class="progress-fill" id="progressFill"></div>
+      </div>
+      <span class="progress-pct" id="progressPct">0%</span>
+    </div>
+
     <!-- ── Painel de avisos ── -->
     <section class="avisos-panel" id="avisosPanel" hidden>
       <h3>⚠ Avisos</h3>

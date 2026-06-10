@@ -199,6 +199,51 @@ main {
 }
 
 /* ============================================================
+   Barra de progresso
+============================================================ */
+.progress-area {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 6px 0 10px;
+}
+
+.progress-label {
+  font-size: .8rem;
+  color: var(--c500);
+  white-space: nowrap;
+  min-width: 220px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.progress-track {
+  flex: 1;
+  height: 8px;
+  background: var(--c200);
+  border-radius: 4px;
+  overflow: hidden;
+  min-width: 80px;
+}
+
+.progress-fill {
+  height: 100%;
+  width: 0%;
+  background: var(--azul);
+  border-radius: 4px;
+  transition: width .15s linear;
+}
+
+.progress-pct {
+  font-family: var(--mono);
+  font-size: .8rem;
+  font-weight: 700;
+  color: var(--c700);
+  min-width: 38px;
+  text-align: right;
+}
+
+/* ============================================================
    Botões
 ============================================================ */
 .btn-primary {
