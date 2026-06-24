@@ -4,29 +4,22 @@ import com.google.gson.Gson;
 import mz.ao.bank.edst.model.*;
 import mz.ao.bank.edst.parser.FicheiroProcessedParser;
 import mz.ao.bank.edst.reconciliation.ReconciliadorProcessed;
+import mz.ao.bank.edst.util.CsvUtil;
 
 import javax.servlet.ServletException;
 import javax.servlet.annotation.MultipartConfig;
 import javax.servlet.annotation.WebServlet;
-import javax.servlet.http.HttpServlet;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-import javax.servlet.http.Part;
-import java.io.IOException;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
+import javax.servlet.http.*;
+import java.io.*;
+import java.util.*;
 
 /**
  * POST /api/reconciliar-processed
  *
- * Parâmetros multipart:
- *   ficheiroC  — Ficheiro C (processed.EDST — pedidos/respostas)
- *   ficheiroD  — Ficheiro D (processed.EDST — pedidos/respostas)
- *   encoding   — "utf-8" | "windows-1252"
+ * Parâmetros multipart: ficheiroC, ficheiroD, encoding.
  *
- * Resposta: JSON com registosC, registosD, matches, soEmC, soEmD,
- *           transaccoes, debug.
+ * Processa no servidor, escreve CSVs em disco e devolve JSON compacto
+ * (máx. 500 linhas por tabela + token de download).
  */
 @WebServlet("/api/reconciliar-processed")
 @MultipartConfig(
@@ -36,7 +29,8 @@ import java.util.Map;
 )
 public class ReconciliacaoProcessedServlet extends HttpServlet {
 
-    private static final Gson GSON = new Gson();
+    private static final Gson GSON    = new Gson();
+    private static final int  PREVIEW = 500;
 
     @Override
     protected void doPost(HttpServletRequest req, HttpServletResponse resp)
@@ -59,10 +53,20 @@ public class ReconciliacaoProcessedServlet extends HttpServlet {
 
             ParseResultProcessed       resultC = FicheiroProcessedParser.parse(partC.getInputStream(), encoding);
             ParseResultProcessed       resultD = FicheiroProcessedParser.parse(partD.getInputStream(), encoding);
-            ReconciliacaoProcessedResult rec   =
-                ReconciliadorProcessed.reconciliar(resultC.registos, resultD.registos);
-            List<Transaccao> transaccoes = ReconciliadorProcessed.extrairTransaccoes(rec.matches);
+            ReconciliacaoProcessedResult rec   = ReconciliadorProcessed.reconciliar(resultC.registos, resultD.registos);
+            List<Transaccao> transaccoes       = ReconciliadorProcessed.extrairTransaccoes(rec.matches);
 
+            /* Write full CSVs to temp dir */
+            String token  = UUID.randomUUID().toString();
+            File   tmpDir = tempDir();
+            writeCsvSimples(new File(tmpDir, "edst_" + token + "_C.csv"),        resultC.registos);
+            writeCsvSimples(new File(tmpDir, "edst_" + token + "_D.csv"),        resultD.registos);
+            writeCsvMatches(new File(tmpDir, "edst_" + token + "_matchesP.csv"), rec.matches);
+            writeCsvSimples(new File(tmpDir, "edst_" + token + "_soC.csv"),      rec.soEmC);
+            writeCsvSimples(new File(tmpDir, "edst_" + token + "_soD.csv"),      rec.soEmD);
+            writeCsvTransaccoes(new File(tmpDir, "edst_" + token + "_transaccoes.csv"), transaccoes);
+
+            /* Compact JSON */
             Map<String, Object> debug = new LinkedHashMap<>();
             debug.put("totalRequestC", resultC.totalRequest);
             debug.put("exclC",         resultC.excluidos);
@@ -74,12 +78,13 @@ public class ReconciliacaoProcessedServlet extends HttpServlet {
             debug.put("nTransaccoes",  transaccoes.size());
 
             Map<String, Object> body = new LinkedHashMap<>();
-            body.put("registosC",   resultC.registos);
-            body.put("registosD",   resultD.registos);
-            body.put("matches",     rec.matches);
-            body.put("soEmC",       rec.soEmC);
-            body.put("soEmD",       rec.soEmD);
-            body.put("transaccoes", transaccoes);
+            body.put("token",       token);
+            body.put("registosC",   preview(resultC.registos));
+            body.put("registosD",   preview(resultD.registos));
+            body.put("matches",     preview(rec.matches));
+            body.put("soEmC",       preview(rec.soEmC));
+            body.put("soEmD",       preview(rec.soEmD));
+            body.put("transaccoes", preview(transaccoes));
             body.put("debug",       debug);
 
             resp.getWriter().write(GSON.toJson(body));
@@ -89,5 +94,42 @@ public class ReconciliacaoProcessedServlet extends HttpServlet {
             resp.getWriter().write("{\"error\":" + GSON.toJson(e.getMessage()) + "}");
             getServletContext().log("ReconciliacaoProcessedServlet error", e);
         }
+    }
+
+    /* ── CSV writers ─────────────────────────────────────────── */
+
+    private void writeCsvSimples(File file, List<RegistoProcessed> list) throws IOException {
+        try (PrintWriter pw = CsvUtil.openWriter(file)) {
+            pw.println(CsvUtil.row("ID", "Resposta"));
+            for (RegistoProcessed r : list)
+                pw.println(CsvUtil.row(r.id, r.resposta));
+        }
+    }
+
+    private void writeCsvMatches(File file, List<MatchProcessed> list) throws IOException {
+        try (PrintWriter pw = CsvUtil.openWriter(file)) {
+            pw.println(CsvUtil.row("ID", "Resposta_C", "Resposta_D"));
+            for (MatchProcessed m : list)
+                pw.println(CsvUtil.row(m.id, m.respostaC, m.respostaD));
+        }
+    }
+
+    private void writeCsvTransaccoes(File file, List<Transaccao> list) throws IOException {
+        try (PrintWriter pw = CsvUtil.openWriter(file)) {
+            pw.println(CsvUtil.row("ID","Referencia","Balcao","Resposta_C","Resposta_D"));
+            for (Transaccao t : list)
+                pw.println(CsvUtil.row(t.id, t.referencia, t.balcao, t.respostaC, t.respostaD));
+        }
+    }
+
+    /* ── Helpers ─────────────────────────────────────────────── */
+
+    private <T> List<T> preview(List<T> list) {
+        return list.size() <= PREVIEW ? list : list.subList(0, PREVIEW);
+    }
+
+    private File tempDir() {
+        File d = (File) getServletContext().getAttribute("javax.servlet.context.tempdir");
+        return d != null ? d : new File(System.getProperty("java.io.tmpdir"));
     }
 }

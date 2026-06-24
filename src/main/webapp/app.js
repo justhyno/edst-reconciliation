@@ -1,25 +1,27 @@
 /* ============================================================
    Reconciliação EDST × ATM Message Log
-   Toda a lógica de parsing e reconciliação corre no servidor
-   (Java Servlet). Este ficheiro trata apenas da UI e do fetch.
+   Parsing e reconciliação correm no servidor Java.
+   Este ficheiro trata apenas de UI, fetch e download.
 ============================================================ */
 
 'use strict';
 
-/* ── Estado global ─────────────────────────────────────────── */
-let registosA = [];
-let registosB = [];
+/* ── Tokens dos últimos processamentos (para download CSV) ── */
+let downloadTokenA = null;
+let downloadTokenP = null;
+
+/* ── Dados de pré-visualização (máx 500 linhas por tabela) ── */
+let registosA = [], registosB = [];
 let resultadoRec = { matches: [], soEmA: [], soEmB: [] };
 let avisos = [];
 
-let registosC = [];
-let registosD = [];
+let registosC = [], registosD = [];
 let resultadoRecProcessed = { matches: [], soEmC: [], soEmD: [] };
 let transaccoesDuplicadas = [];
 
 
 /* ============================================================
-   UI — Progresso
+   Progresso
 ============================================================ */
 
 function mostrarProgresso(label, pct) {
@@ -36,7 +38,7 @@ function ocultarProgresso() {
 
 
 /* ============================================================
-   UI — Helpers de renderização
+   Helpers de renderização
 ============================================================ */
 
 function td(texto, className) {
@@ -67,9 +69,17 @@ function escHtml(str) {
     .replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 }
 
+/** Formata "500 de 12 345 registos" ou simplesmente "12 345 registos". */
+function badgeText(previewLen, totalLen, sufixo) {
+  const fmt = n => n.toLocaleString('pt');
+  if (previewLen < totalLen)
+    return `A mostrar ${fmt(previewLen)} de ${fmt(totalLen)} ${sufixo} — descarregue o CSV para o total`;
+  return `${fmt(totalLen)} ${sufixo}`;
+}
+
 
 /* ============================================================
-   Sistema de tabs
+   Tabs
 ============================================================ */
 
 function initTabs(container) {
@@ -88,7 +98,7 @@ function initTabs(container) {
    Módulo 1 — Renderização
 ============================================================ */
 
-function renderTabelaB(registos) {
+function renderTabelaB(registos, total) {
   const frag = document.createDocumentFragment();
   const cols  = ['RRN','CARD','DHMSG','id','campo_2','campo_3','campo_4','campo_6','campo_8','campo_9'];
   for (const r of registos) {
@@ -97,10 +107,10 @@ function renderTabelaB(registos) {
     frag.appendChild(tr);
   }
   preencherTabela('corpoB', frag);
-  document.getElementById('countB').textContent = `${registos.length} registos`;
+  document.getElementById('countB').textContent = badgeText(registos.length, total, 'registos');
 }
 
-function renderTabelaA(registos, descartadas) {
+function renderTabelaA(registos, total, descartadas) {
   const frag = document.createDocumentFragment();
   for (const r of registos) {
     const tr = document.createElement('tr');
@@ -110,12 +120,12 @@ function renderTabelaA(registos, descartadas) {
     frag.appendChild(tr);
   }
   preencherTabela('corpoA', frag);
-  let txt = `${registos.length} registos`;
-  if (descartadas > 0) txt += ` · ${descartadas} linha(s) descartada(s) por comprimento insuficiente`;
+  let txt = badgeText(registos.length, total, 'registos');
+  if (descartadas > 0) txt += ` · ${descartadas} descartada(s) por comprimento insuficiente`;
   document.getElementById('countA').textContent = txt;
 }
 
-function renderTabelaMatches(matches) {
+function renderTabelaMatches(matches, total) {
   const frag = document.createDocumentFragment();
   const cols  = ['RRN','CARD','DHMSG','campo_6','numLinhaA','OFS'];
   for (const r of matches) {
@@ -125,10 +135,10 @@ function renderTabelaMatches(matches) {
     frag.appendChild(tr);
   }
   preencherTabela('corpoMatches', frag);
-  document.getElementById('countMatches').textContent = `${matches.length} matches`;
+  document.getElementById('countMatches').textContent = badgeText(matches.length, total, 'matches');
 }
 
-function renderTabelaSoA(registos) {
+function renderTabelaSoA(registos, total) {
   const frag = document.createDocumentFragment();
   for (const r of registos) {
     const tr = document.createElement('tr');
@@ -139,10 +149,10 @@ function renderTabelaSoA(registos) {
     frag.appendChild(tr);
   }
   preencherTabela('corpoSoA', frag);
-  document.getElementById('countSoA').textContent = `${registos.length} só em A`;
+  document.getElementById('countSoA').textContent = badgeText(registos.length, total, 'só em A');
 }
 
-function renderTabelaSoB(registos) {
+function renderTabelaSoB(registos, total) {
   const frag = document.createDocumentFragment();
   const cols  = ['RRN','CARD','DHMSG','campo_6','campo_9'];
   for (const r of registos) {
@@ -152,24 +162,24 @@ function renderTabelaSoB(registos) {
     frag.appendChild(tr);
   }
   preencherTabela('corpoSoB', frag);
-  document.getElementById('countSoB').textContent = `${registos.length} só em B`;
+  document.getElementById('countSoB').textContent = badgeText(registos.length, total, 'só em B');
 }
 
 function mostrarDebug(info) {
   const itens = [
-    { label: 'Total linhas em A',               valor: info.totalLinhasA      },
-    { label: 'Passaram filtro (pos1=1, pos7=6)', valor: info.passaramFiltro   },
+    { label: 'Total linhas em A',               valor: info.totalLinhasA       },
+    { label: 'Passaram filtro (pos1=1, pos7=6)', valor: info.passaramFiltro    },
     { label: 'Descartadas (linha curta)',         valor: info.descartadasCurtas },
-    { label: 'Registos brutos em B',             valor: info.totalBrutosB      },
-    { label: 'Registos B com ACLK',              valor: info.totalAclkB        },
-    { label: 'Matches',                          valor: info.nMatches           },
-    { label: 'Só em A',                          valor: info.nSoA               },
-    { label: 'Só em B',                          valor: info.nSoB               }
+    { label: 'Registos brutos em B',             valor: info.totalBrutosB       },
+    { label: 'Registos B com ACLK',              valor: info.totalAclkB         },
+    { label: 'Matches',                          valor: info.nMatches            },
+    { label: 'Só em A',                          valor: info.nSoA                },
+    { label: 'Só em B',                          valor: info.nSoB                }
   ];
   document.getElementById('debugGrid').innerHTML = itens.map(it =>
     `<div class="debug-item">
        <span class="debug-label">${it.label}</span>
-       <span class="debug-value">${it.valor != null ? it.valor : '—'}</span>
+       <span class="debug-value">${it.valor != null ? it.valor.toLocaleString('pt') : '—'}</span>
      </div>`
   ).join('');
   document.getElementById('debugPanel').hidden = false;
@@ -179,15 +189,15 @@ function mostrarRecCounts(info) {
   document.getElementById('recCounts').innerHTML =
     `<div class="rec-stat">
        <span class="rec-stat-label">Matches</span>
-       <span class="rec-stat-value v-match">${info.nMatches}</span>
+       <span class="rec-stat-value v-match">${info.nMatches.toLocaleString('pt')}</span>
      </div>
      <div class="rec-stat">
        <span class="rec-stat-label">Só em A</span>
-       <span class="rec-stat-value v-soA">${info.nSoA}</span>
+       <span class="rec-stat-value v-soA">${info.nSoA.toLocaleString('pt')}</span>
      </div>
      <div class="rec-stat">
        <span class="rec-stat-label">Só em B</span>
-       <span class="rec-stat-value v-soB">${info.nSoB}</span>
+       <span class="rec-stat-value v-soB">${info.nSoB.toLocaleString('pt')}</span>
      </div>`;
 }
 
@@ -203,55 +213,17 @@ function mostrarAvisos() {
 
 
 /* ============================================================
-   Módulo 1 — Exportar CSV
+   Módulo 1 — Export CSV (via servidor)
 ============================================================ */
 
 function exportarCSV(tipo) {
-  let dados = [], colunas = [], nomeFicheiro = '';
-  switch (tipo) {
-    case 'B':
-      colunas      = ['RRN','CARD','DHMSG','id','campo_2','campo_3','campo_4','campo_6','campo_8','campo_9'];
-      dados        = registosB;
-      nomeFicheiro = 'ficheiroB_parseado.csv';
-      break;
-    case 'A':
-      colunas      = ['numLinha','RRN','linhaCompleta'];
-      dados        = registosA;
-      nomeFicheiro = 'ficheiroA_filtrado.csv';
-      break;
-    case 'matches':
-      colunas      = ['RRN','CARD','DHMSG','campo_6','campo_9','numLinhaA','OFS'];
-      dados        = resultadoRec.matches;
-      nomeFicheiro = 'reconciliacao_matches.csv';
-      break;
-    case 'soA':
-      colunas      = ['numLinha','RRN','linhaCompleta'];
-      dados        = resultadoRec.soEmA;
-      nomeFicheiro = 'reconciliacao_so_em_A.csv';
-      break;
-    case 'soB':
-      colunas      = ['RRN','CARD','DHMSG','campo_6','campo_9'];
-      dados        = resultadoRec.soEmB;
-      nomeFicheiro = 'reconciliacao_so_em_B.csv';
-      break;
-    default: return;
-  }
-  const BOM    = '﻿';
-  const linhas = [colunas.join(';')];
-  for (const row of dados) {
-    const campos = colunas.map(c => {
-      const val = String(row[c] != null ? row[c] : '');
-      return (val.includes(';') || val.includes('"') || val.includes('\n'))
-        ? `"${val.replace(/"/g, '""')}"` : val;
-    });
-    linhas.push(campos.join(';'));
-  }
-  downloadBlob(BOM + linhas.join('\r\n'), nomeFicheiro);
+  if (!downloadTokenA) return;
+  serverDownload(downloadTokenA, tipo);
 }
 
 
 /* ============================================================
-   Módulo 1 — Handler principal (fetch → servidor Java)
+   Módulo 1 — Handler (fetch → servidor Java)
 ============================================================ */
 
 async function processar() {
@@ -285,23 +257,25 @@ async function processar() {
       throw new Error(err.error || `HTTP ${resp.status}`);
     }
 
-    mostrarProgresso('A carregar resultados…', 90);
+    mostrarProgresso('A carregar pré-visualização…', 90);
     const data = await resp.json();
 
-    registosA    = data.registosA;
-    registosB    = data.registosB;
-    resultadoRec = { matches: data.matches, soEmA: data.soEmA, soEmB: data.soEmB };
+    downloadTokenA = data.token;
+    registosA      = data.registosA;
+    registosB      = data.registosB;
+    resultadoRec   = { matches: data.matches, soEmA: data.soEmA, soEmB: data.soEmB };
 
+    const dbg = data.debug;
     ocultarProgresso();
 
-    renderTabelaB(registosB);
-    renderTabelaA(registosA, data.debug.descartadasCurtas);
-    renderTabelaMatches(resultadoRec.matches);
-    renderTabelaSoA(resultadoRec.soEmA);
-    renderTabelaSoB(resultadoRec.soEmB);
+    renderTabelaB(registosB, dbg.totalAclkB);
+    renderTabelaA(registosA, dbg.passaramFiltro, dbg.descartadasCurtas);
+    renderTabelaMatches(resultadoRec.matches, dbg.nMatches);
+    renderTabelaSoA(resultadoRec.soEmA, dbg.nSoA);
+    renderTabelaSoB(resultadoRec.soEmB, dbg.nSoB);
 
-    mostrarDebug(data.debug);
-    mostrarRecCounts(data.debug);
+    mostrarDebug(dbg);
+    mostrarRecCounts(dbg);
     mostrarAvisos();
 
     document.getElementById('resultados').hidden = false;
@@ -323,7 +297,7 @@ async function processar() {
    Módulo 2 — Renderização
 ============================================================ */
 
-function renderTabelaProcessedSimples(tbodyId, countId, registos, labelSufixo) {
+function renderTabelaProcessedSimples(tbodyId, countId, registos, total, labelSufixo) {
   const frag = document.createDocumentFragment();
   for (const r of registos) {
     const tr = document.createElement('tr');
@@ -332,10 +306,10 @@ function renderTabelaProcessedSimples(tbodyId, countId, registos, labelSufixo) {
     frag.appendChild(tr);
   }
   preencherTabela(tbodyId, frag);
-  document.getElementById(countId).textContent = `${registos.length} ${labelSufixo}`;
+  document.getElementById(countId).textContent = badgeText(registos.length, total, labelSufixo);
 }
 
-function renderTabelaMatchesProcessed(matches) {
+function renderTabelaMatchesProcessed(matches, total) {
   const frag = document.createDocumentFragment();
   for (const m of matches) {
     const tr = document.createElement('tr');
@@ -346,10 +320,10 @@ function renderTabelaMatchesProcessed(matches) {
     frag.appendChild(tr);
   }
   preencherTabela('corpoPMatches', frag);
-  document.getElementById('countPMatches').textContent = `${matches.length} matches`;
+  document.getElementById('countPMatches').textContent = badgeText(matches.length, total, 'matches');
 }
 
-function renderTabelaTransaccoes(lista) {
+function renderTabelaTransaccoes(lista, total) {
   const frag = document.createDocumentFragment();
   for (const r of lista) {
     const tr = document.createElement('tr');
@@ -362,7 +336,7 @@ function renderTabelaTransaccoes(lista) {
     frag.appendChild(tr);
   }
   preencherTabela('corpoTransaccoes', frag);
-  document.getElementById('countTransaccoes').textContent = `${lista.length} transacções`;
+  document.getElementById('countTransaccoes').textContent = badgeText(lista.length, total, 'transacções');
 }
 
 function mostrarDebugProcessed(info) {
@@ -379,7 +353,7 @@ function mostrarDebugProcessed(info) {
   document.getElementById('debugGridProcessed').innerHTML = itens.map(it =>
     `<div class="debug-item">
        <span class="debug-label">${it.label}</span>
-       <span class="debug-value">${it.valor != null ? it.valor : '—'}</span>
+       <span class="debug-value">${it.valor != null ? it.valor.toLocaleString('pt') : '—'}</span>
      </div>`
   ).join('');
   document.getElementById('debugPanelProcessed').hidden = false;
@@ -389,73 +363,34 @@ function mostrarRecCountsProcessed(info) {
   document.getElementById('recCountsProcessed').innerHTML =
     `<div class="rec-stat">
        <span class="rec-stat-label">Matches</span>
-       <span class="rec-stat-value v-match">${info.nMatches}</span>
+       <span class="rec-stat-value v-match">${info.nMatches.toLocaleString('pt')}</span>
      </div>
      <div class="rec-stat">
        <span class="rec-stat-label">Só em C</span>
-       <span class="rec-stat-value v-soA">${info.nSoC}</span>
+       <span class="rec-stat-value v-soA">${info.nSoC.toLocaleString('pt')}</span>
      </div>
      <div class="rec-stat">
        <span class="rec-stat-label">Só em D</span>
-       <span class="rec-stat-value v-soB">${info.nSoD}</span>
+       <span class="rec-stat-value v-soB">${info.nSoD.toLocaleString('pt')}</span>
      </div>`;
 }
 
 
 /* ============================================================
-   Módulo 2 — Exportar CSV
+   Módulo 2 — Export CSV (via servidor)
 ============================================================ */
 
-function csvEsc(val) {
-  const s = String(val != null ? val : '');
-  return (s.includes(';') || s.includes('"') || s.includes('\n'))
-    ? `"${s.replace(/"/g, '""')}"` : s;
-}
-
 function exportarCSVProcessed(tipo) {
-  const BOM = '﻿';
-  let linhas = [], nomeFicheiro = '';
-
-  const linhaSimples = r => [r.id, csvEsc(r.resposta)].join(';');
-
-  switch (tipo) {
-    case 'C':
-      nomeFicheiro = 'processedEDST_ficheiroC.csv';
-      linhas = ['ID;Resposta', ...registosC.map(linhaSimples)];
-      break;
-    case 'D':
-      nomeFicheiro = 'processedEDST_ficheiroD.csv';
-      linhas = ['ID;Resposta', ...registosD.map(linhaSimples)];
-      break;
-    case 'matches':
-      nomeFicheiro = 'processedEDST_matches.csv';
-      linhas = ['ID;Resposta_C;Resposta_D',
-                ...resultadoRecProcessed.matches.map(m =>
-                  [m.id, csvEsc(m.respostaC), csvEsc(m.respostaD)].join(';'))];
-      break;
-    case 'soC':
-      nomeFicheiro = 'processedEDST_so_em_C.csv';
-      linhas = ['ID;Resposta', ...resultadoRecProcessed.soEmC.map(linhaSimples)];
-      break;
-    case 'soD':
-      nomeFicheiro = 'processedEDST_so_em_D.csv';
-      linhas = ['ID;Resposta', ...resultadoRecProcessed.soEmD.map(linhaSimples)];
-      break;
-    case 'transaccoes':
-      nomeFicheiro = 'processedEDST_transaccoes.csv';
-      linhas = ['ID;Referencia;Balcao;Resposta_C;Resposta_D',
-                ...transaccoesDuplicadas.map(r =>
-                  [r.id, csvEsc(r.referencia), csvEsc(r.balcao),
-                   csvEsc(r.respostaC), csvEsc(r.respostaD)].join(';'))];
-      break;
-    default: return;
-  }
-  downloadBlob(BOM + linhas.join('\r\n'), nomeFicheiro);
+  if (!downloadTokenP) return;
+  /* "matches" em módulo 2 usa o tipo "matchesP" no servidor para não colidir */
+  const typeMap = { C:'C', D:'D', matches:'matchesP', soC:'soC', soD:'soD', transaccoes:'transaccoes' };
+  const t = typeMap[tipo];
+  if (t) serverDownload(downloadTokenP, t);
 }
 
 
 /* ============================================================
-   Módulo 2 — Handler principal (fetch → servidor Java)
+   Módulo 2 — Handler (fetch → servidor Java)
 ============================================================ */
 
 async function processarProcessed() {
@@ -466,7 +401,7 @@ async function processarProcessed() {
     const inputD = document.getElementById('ficheiroD');
 
     if (!inputC || !inputD) {
-      throw new Error('Elementos de input não encontrados — tente recarregar a página.');
+      throw new Error('Elementos de input não encontrados — recarregue a página.');
     }
 
     const fileC = inputC.files[0];
@@ -495,25 +430,30 @@ async function processarProcessed() {
       throw new Error(err.error || `HTTP ${resp.status}`);
     }
 
-    mostrarProgresso('A carregar resultados…', 90);
+    mostrarProgresso('A carregar pré-visualização…', 90);
     const data = await resp.json();
 
+    downloadTokenP        = data.token;
     registosC             = data.registosC;
     registosD             = data.registosD;
     resultadoRecProcessed = { matches: data.matches, soEmC: data.soEmC, soEmD: data.soEmD };
     transaccoesDuplicadas = data.transaccoes;
 
+    const dbg = data.debug;
+    const totalC = dbg.totalRequestC - dbg.exclC;
+    const totalD = dbg.totalRequestD - dbg.exclD;
+
     ocultarProgresso();
 
-    renderTabelaProcessedSimples('corpoPC',   'countPC',   registosC,                          'transacções');
-    renderTabelaProcessedSimples('corpoPD',   'countPD',   registosD,                          'transacções');
-    renderTabelaMatchesProcessed(resultadoRecProcessed.matches);
-    renderTabelaProcessedSimples('corpoPSoC', 'countPSoC', resultadoRecProcessed.soEmC, 'só em C');
-    renderTabelaProcessedSimples('corpoPSoD', 'countPSoD', resultadoRecProcessed.soEmD, 'só em D');
-    renderTabelaTransaccoes(transaccoesDuplicadas);
+    renderTabelaProcessedSimples('corpoPC',   'countPC',   registosC,                         totalC,        'transacções');
+    renderTabelaProcessedSimples('corpoPD',   'countPD',   registosD,                         totalD,        'transacções');
+    renderTabelaMatchesProcessed(resultadoRecProcessed.matches,                                dbg.nMatches);
+    renderTabelaProcessedSimples('corpoPSoC', 'countPSoC', resultadoRecProcessed.soEmC,        dbg.nSoC,      'só em C');
+    renderTabelaProcessedSimples('corpoPSoD', 'countPSoD', resultadoRecProcessed.soEmD,        dbg.nSoD,      'só em D');
+    renderTabelaTransaccoes(transaccoesDuplicadas,                                             dbg.nTransaccoes);
 
-    mostrarDebugProcessed(data.debug);
-    mostrarRecCountsProcessed(data.debug);
+    mostrarDebugProcessed(dbg);
+    mostrarRecCountsProcessed(dbg);
 
     const secao = document.getElementById('resultadosProcessed');
     secao.hidden = false;
@@ -522,10 +462,11 @@ async function processarProcessed() {
       secao.dataset.tabsInit = '1';
     }
 
-    exportarCSVProcessed('matches');
-    exportarCSVProcessed('soC');
-    exportarCSVProcessed('soD');
-    exportarCSVProcessed('transaccoes');
+    /* Auto-download dos CSVs via servidor — espaçados para não serem bloqueados */
+    setTimeout(() => exportarCSVProcessed('matches'),     200);
+    setTimeout(() => exportarCSVProcessed('soC'),         500);
+    setTimeout(() => exportarCSVProcessed('soD'),         800);
+    setTimeout(() => exportarCSVProcessed('transaccoes'), 1100);
 
   } catch (err) {
     ocultarProgresso();
@@ -541,6 +482,19 @@ async function processarProcessed() {
 
 
 /* ============================================================
+   Download helper
+============================================================ */
+
+function serverDownload(token, type) {
+  const a = document.createElement('a');
+  a.href = 'api/download?token=' + encodeURIComponent(token) + '&type=' + encodeURIComponent(type);
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+}
+
+
+/* ============================================================
    Copiar comando DBTools
 ============================================================ */
 
@@ -548,8 +502,7 @@ function copiarComando(btn) {
   const cmd = btn.dataset.cmd;
   navigator.clipboard.writeText(cmd).then(() => {
     const orig = btn.textContent;
-    btn.textContent = '✓';
-    btn.classList.add('copiado');
+    btn.textContent = '✓'; btn.classList.add('copiado');
     setTimeout(() => { btn.textContent = orig; btn.classList.remove('copiado'); }, 1800);
   }).catch(() => {
     const ta = document.createElement('textarea');
@@ -559,19 +512,6 @@ function copiarComando(btn) {
     btn.textContent = '✓'; btn.classList.add('copiado');
     setTimeout(() => { btn.textContent = '⎘'; btn.classList.remove('copiado'); }, 1800);
   });
-}
-
-
-/* ============================================================
-   Utilitário — download de Blob como ficheiro
-============================================================ */
-
-function downloadBlob(texto, nomeFicheiro) {
-  const blob = new Blob([texto], { type: 'text/csv;charset=utf-8;' });
-  const url  = URL.createObjectURL(blob);
-  const a    = document.createElement('a');
-  a.href = url; a.download = nomeFicheiro; a.click();
-  URL.revokeObjectURL(url);
 }
 
 
