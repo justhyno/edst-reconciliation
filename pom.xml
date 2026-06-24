@@ -21,16 +21,17 @@
   </properties>
 
   <dependencies>
-    <!--
-      Servlet API 3.1 — fornecida pelo JBoss EAP 7.2 em runtime.
-      Scope "provided": não é empacotada na WAR.
-      Disponível no Maven Central, sem repositórios adicionais.
-    -->
     <dependency>
       <groupId>javax.servlet</groupId>
       <artifactId>javax.servlet-api</artifactId>
       <version>3.1.0</version>
       <scope>provided</scope>
+    </dependency>
+    <!-- Gson bundled in WAR — zero runtime config needed on JBoss -->
+    <dependency>
+      <groupId>com.google.code.gson</groupId>
+      <artifactId>gson</artifactId>
+      <version>2.10.1</version>
     </dependency>
   </dependencies>
 
