@@ -119,6 +119,12 @@ main {
   color: var(--c500);
 }
 
+.file-hint {
+  font-size: .75rem;
+  color: var(--ambar);
+  margin-top: 2px;
+}
+
 /* ── Nota "Como gerar" ── */
 .how-to {
   background: #eff6ff;
@@ -421,6 +427,11 @@ main {
 .tab-btn--destaque               { color: var(--ambar); }
 .tab-btn--destaque:hover         { color: #b45309; }
 .tab-btn--destaque.active        { color: var(--ambar); border-bottom-color: var(--ambar); }
+
+/* Tab especial "Falhas" em vermelho */
+.tab-btn--alerta               { color: var(--vermelho); }
+.tab-btn--alerta:hover         { color: #991b1b; }
+.tab-btn--alerta.active        { color: var(--vermelho); border-bottom-color: var(--vermelho); }
 
 /* Descrição no topo do tab */
 .tab-desc {

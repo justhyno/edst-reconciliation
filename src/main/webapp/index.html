@@ -200,14 +200,16 @@
 
     <section class="inputs-section">
       <div class="input-card">
-        <label for="ficheiroC">Ficheiro C — processed.EDST</label>
+        <label for="ficheiroC">Ficheiro C — <strong>PROCESSED.EDST</strong></label>
         <input type="file" id="ficheiroC" accept=".txt,.dat,.log,*">
         <span class="file-info" id="infoC">Nenhum ficheiro selecionado</span>
+        <span class="file-hint">O nome do ficheiro deve começar com <code>PROCESSED.EDST</code></span>
       </div>
       <div class="input-card">
-        <label for="ficheiroD">Ficheiro D — processed.EDST</label>
+        <label for="ficheiroD">Ficheiro D — <strong>PROCESSED.EDST</strong></label>
         <input type="file" id="ficheiroD" accept=".txt,.dat,.log,*">
         <span class="file-info" id="infoD">Nenhum ficheiro selecionado</span>
+        <span class="file-hint">O nome do ficheiro deve começar com <code>PROCESSED.EDST</code></span>
       </div>
     </section>
 
@@ -227,6 +229,7 @@
         <button class="tab-btn active" data-tab="tabPC">Ficheiro C Parseado</button>
         <button class="tab-btn" data-tab="tabPD">Ficheiro D Parseado</button>
         <button class="tab-btn" data-tab="tabPRec">Reconciliação</button>
+        <button class="tab-btn tab-btn--alerta" data-tab="tabFalhas">Falhas</button>
         <button class="tab-btn tab-btn--destaque" data-tab="tabTransaccoes">Transacções</button>
       </div>
 
@@ -325,6 +328,39 @@
         </div>
 
       </div><!-- /tabPRec -->
+
+      <!-- Tab Falhas — transacções filtradas por marcador de falha -->
+      <div class="tab-content" id="tabFalhas">
+        <p class="tab-desc">
+          Transacções excluídas da reconciliação por conterem marcadores de falha
+          (<code>RNAO</code>, <code>INAU</code>, <code>INAO</code>, <code>//-1</code>)
+          na linha de resposta.
+        </p>
+
+        <h4 class="rec-section-title soB">Falhas em C</h4>
+        <div class="tab-header">
+          <span class="count-badge soB" id="countFalhasC">—</span>
+          <button class="btn-export" onclick="exportarCSVProcessed('failedC')">Exportar CSV</button>
+        </div>
+        <div class="table-wrapper">
+          <table>
+            <thead><tr><th>ID</th><th>Resposta</th></tr></thead>
+            <tbody id="corpoFalhasC"></tbody>
+          </table>
+        </div>
+
+        <h4 class="rec-section-title soB">Falhas em D</h4>
+        <div class="tab-header">
+          <span class="count-badge soB" id="countFalhasD">—</span>
+          <button class="btn-export" onclick="exportarCSVProcessed('failedD')">Exportar CSV</button>
+        </div>
+        <div class="table-wrapper">
+          <table>
+            <thead><tr><th>ID</th><th>Resposta</th></tr></thead>
+            <tbody id="corpoFalhasD"></tbody>
+          </table>
+        </div>
+      </div><!-- /tabFalhas -->
 
       <!-- Tab Transacções — duplicados com referência e balcão -->
       <div class="tab-content" id="tabTransaccoes">

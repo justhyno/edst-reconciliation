@@ -34,6 +34,8 @@ public class DownloadServlet extends HttpServlet {
         FILENAMES.put("soC",         "processedEDST_so_em_C.csv");
         FILENAMES.put("soD",         "processedEDST_so_em_D.csv");
         FILENAMES.put("transaccoes", "processedEDST_transaccoes.csv");
+        FILENAMES.put("failedC",     "processedEDST_falhas_C.csv");
+        FILENAMES.put("failedD",     "processedEDST_falhas_D.csv");
     }
 
     @Override

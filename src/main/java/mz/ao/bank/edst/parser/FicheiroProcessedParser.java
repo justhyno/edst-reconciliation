@@ -54,23 +54,34 @@ public class FicheiroProcessedParser {
 
         if (idActual != null) flushRegisto(todos, idActual, respostasAct);
 
-        /* Keep only transactions with exactly 1 response */
-        List<RegistoProcessed> registos  = new ArrayList<>();
+        /* Separate: no/multi-response → excluidos; failed → falhas; ok → registos */
+        List<RegistoProcessed> registos = new ArrayList<>();
+        List<RegistoProcessed> falhas   = new ArrayList<>();
         int excluidos = 0;
         for (RegistoProcessed r : todos) {
-            if (r.resposta != null) {
-                registos.add(r);
-            } else {
+            if (r.resposta == null) {
                 excluidos++;
+            } else if (isFailed(r.resposta)) {
+                falhas.add(r);
+            } else {
+                registos.add(r);
             }
         }
 
         ParseResultProcessed result = new ParseResultProcessed();
         result.registos      = registos;
+        result.falhas        = falhas;
         result.totalRequest  = totalRequest;
         result.totalResponse = totalResponse;
         result.excluidos     = excluidos;
         return result;
+    }
+
+    private static boolean isFailed(String resposta) {
+        return resposta.contains("RNAO")
+            || resposta.contains("INAU")
+            || resposta.contains("INAO")
+            || resposta.contains("//-1");
     }
 
     private static void flushRegisto(List<RegistoProcessed> dest,

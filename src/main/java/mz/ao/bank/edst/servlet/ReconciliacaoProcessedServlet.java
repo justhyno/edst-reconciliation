@@ -51,6 +51,20 @@ public class ReconciliacaoProcessedServlet extends HttpServlet {
                 return;
             }
 
+            /* Validate PROCESSED.EDST prefix */
+            String nameC = getFileName(partC);
+            String nameD = getFileName(partD);
+            if (!nameC.toUpperCase().startsWith("PROCESSED.EDST")) {
+                resp.setStatus(400);
+                resp.getWriter().write("{\"error\":\"Ficheiro C deve ter o prefixo PROCESSED.EDST (recebido: " + nameC + ").\"}");
+                return;
+            }
+            if (!nameD.toUpperCase().startsWith("PROCESSED.EDST")) {
+                resp.setStatus(400);
+                resp.getWriter().write("{\"error\":\"Ficheiro D deve ter o prefixo PROCESSED.EDST (recebido: " + nameD + ").\"}");
+                return;
+            }
+
             ParseResultProcessed       resultC = FicheiroProcessedParser.parse(partC.getInputStream(), encoding);
             ParseResultProcessed       resultD = FicheiroProcessedParser.parse(partD.getInputStream(), encoding);
             ReconciliacaoProcessedResult rec   = ReconciliadorProcessed.reconciliar(resultC.registos, resultD.registos);
@@ -65,13 +79,17 @@ public class ReconciliacaoProcessedServlet extends HttpServlet {
             writeCsvSimples(new File(tmpDir, "edst_" + token + "_soC.csv"),      rec.soEmC);
             writeCsvSimples(new File(tmpDir, "edst_" + token + "_soD.csv"),      rec.soEmD);
             writeCsvTransaccoes(new File(tmpDir, "edst_" + token + "_transaccoes.csv"), transaccoes);
+            writeCsvSimples(new File(tmpDir, "edst_" + token + "_failedC.csv"),  resultC.falhas);
+            writeCsvSimples(new File(tmpDir, "edst_" + token + "_failedD.csv"),  resultD.falhas);
 
             /* Compact JSON */
             Map<String, Object> debug = new LinkedHashMap<>();
             debug.put("totalRequestC", resultC.totalRequest);
             debug.put("exclC",         resultC.excluidos);
+            debug.put("failedC",       resultC.falhas.size());
             debug.put("totalRequestD", resultD.totalRequest);
             debug.put("exclD",         resultD.excluidos);
+            debug.put("failedD",       resultD.falhas.size());
             debug.put("nMatches",      rec.matches.size());
             debug.put("nSoC",          rec.soEmC.size());
             debug.put("nSoD",          rec.soEmD.size());
@@ -85,6 +103,8 @@ public class ReconciliacaoProcessedServlet extends HttpServlet {
             body.put("soEmC",       preview(rec.soEmC));
             body.put("soEmD",       preview(rec.soEmD));
             body.put("transaccoes", preview(transaccoes));
+            body.put("falhasC",     preview(resultC.falhas));
+            body.put("falhasD",     preview(resultD.falhas));
             body.put("debug",       debug);
 
             resp.getWriter().write(GSON.toJson(body));
@@ -131,5 +151,20 @@ public class ReconciliacaoProcessedServlet extends HttpServlet {
     private File tempDir() {
         File d = (File) getServletContext().getAttribute("javax.servlet.context.tempdir");
         return d != null ? d : new File(System.getProperty("java.io.tmpdir"));
+    }
+
+    private String getFileName(Part part) {
+        String cd = part.getHeader("content-disposition");
+        if (cd != null) {
+            for (String token : cd.split(";")) {
+                String t = token.trim();
+                if (t.startsWith("filename")) {
+                    String name = t.substring(t.indexOf('=') + 1).trim().replace("\"", "");
+                    int slash = Math.max(name.lastIndexOf('/'), name.lastIndexOf('\\'));
+                    return slash >= 0 ? name.substring(slash + 1) : name;
+                }
+            }
+        }
+        return "";
     }
 }

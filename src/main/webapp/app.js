@@ -341,14 +341,16 @@ function renderTabelaTransaccoes(lista, total) {
 
 function mostrarDebugProcessed(info) {
   const itens = [
-    { label: 'Transacções em C',            valor: info.totalRequestC },
-    { label: 'Excluídas C (>1 resposta)',   valor: info.exclC         },
-    { label: 'Transacções em D',            valor: info.totalRequestD },
-    { label: 'Excluídas D (>1 resposta)',   valor: info.exclD         },
-    { label: 'Matches',                     valor: info.nMatches       },
-    { label: 'Só em C',                     valor: info.nSoC           },
-    { label: 'Só em D',                     valor: info.nSoD           },
-    { label: 'Transacções (duplicate+//1)', valor: info.nTransaccoes   }
+    { label: 'Transacções em C',              valor: info.totalRequestC },
+    { label: 'Excluídas C (>1 resposta)',     valor: info.exclC         },
+    { label: 'Falhas C (RNAO/INAU/INAO//-1)',valor: info.failedC       },
+    { label: 'Transacções em D',              valor: info.totalRequestD },
+    { label: 'Excluídas D (>1 resposta)',     valor: info.exclD         },
+    { label: 'Falhas D (RNAO/INAU/INAO//-1)',valor: info.failedD       },
+    { label: 'Matches',                       valor: info.nMatches       },
+    { label: 'Só em C',                       valor: info.nSoC           },
+    { label: 'Só em D',                       valor: info.nSoD           },
+    { label: 'Transacções (duplicate+//1)',   valor: info.nTransaccoes   }
   ];
   document.getElementById('debugGridProcessed').innerHTML = itens.map(it =>
     `<div class="debug-item">
@@ -383,7 +385,7 @@ function mostrarRecCountsProcessed(info) {
 function exportarCSVProcessed(tipo) {
   if (!downloadTokenP) return;
   /* "matches" em módulo 2 usa o tipo "matchesP" no servidor para não colidir */
-  const typeMap = { C:'C', D:'D', matches:'matchesP', soC:'soC', soD:'soD', transaccoes:'transaccoes' };
+  const typeMap = { C:'C', D:'D', matches:'matchesP', soC:'soC', soD:'soD', transaccoes:'transaccoes', failedC:'failedC', failedD:'failedD' };
   const t = typeMap[tipo];
   if (t) serverDownload(downloadTokenP, t);
 }
@@ -451,6 +453,8 @@ async function processarProcessed() {
     renderTabelaProcessedSimples('corpoPSoC', 'countPSoC', resultadoRecProcessed.soEmC,        dbg.nSoC,      'só em C');
     renderTabelaProcessedSimples('corpoPSoD', 'countPSoD', resultadoRecProcessed.soEmD,        dbg.nSoD,      'só em D');
     renderTabelaTransaccoes(transaccoesDuplicadas,                                             dbg.nTransaccoes);
+    renderTabelaProcessedSimples('corpoFalhasC', 'countFalhasC', data.falhasC || [], dbg.failedC || 0, 'falhas');
+    renderTabelaProcessedSimples('corpoFalhasD', 'countFalhasD', data.falhasD || [], dbg.failedD || 0, 'falhas');
 
     mostrarDebugProcessed(dbg);
     mostrarRecCountsProcessed(dbg);
